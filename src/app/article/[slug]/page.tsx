@@ -1,0 +1,180 @@
+﻿import { notFound } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
+import type { Metadata } from "next"
+import { format } from "date-fns"
+import { id as idLocale } from "date-fns/locale"
+import DOMPurify from "isomorphic-dompurify"
+import { getArticleBySlug, getRelatedArticles } from "@/lib/articles"
+import { HorizontalCard } from "@/components/news/ArticleCard"
+import { ViewTracker } from "./ViewTracker"
+
+interface Props {
+  params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const article = await getArticleBySlug(slug)
+  if (!article) return {}
+
+  return {
+    title: article.title,
+    description: article.excerpt,
+    alternates: { canonical: `/article/${slug}` },
+    openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      type: "article",
+      publishedTime: article.publishedAt?.toISOString(),
+      modifiedTime: article.updatedAt.toISOString(),
+      authors: [article.author.name],
+      images: article.coverImageUrl
+        ? [{ url: article.coverImageUrl, alt: article.title }]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+      images: article.coverImageUrl ? [article.coverImageUrl] : [],
+    },
+  }
+}
+
+function readingTime(html: string): number {
+  const text = html.replace(/<[^>]*>/g, "")
+  const words = text.trim().split(/\s+/).filter(Boolean).length
+  return Math.max(1, Math.ceil(words / 200))
+}
+
+export default async function ArticlePage({ params }: Props) {
+  const { slug } = await params
+  const article = await getArticleBySlug(slug)
+  if (!article) notFound()
+
+  const related = await getRelatedArticles(article.categoryId, slug)
+  const safeContent = DOMPurify.sanitize(article.content)
+  const minutes = readingTime(article.content)
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt,
+    datePublished: article.publishedAt?.toISOString(),
+    dateModified: article.updatedAt.toISOString(),
+    author: { "@type": "Person", name: article.author.name },
+    ...(article.coverImageUrl && { image: [article.coverImageUrl] }),
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ViewTracker articleId={article.id} />
+
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        {/* Category */}
+        <div className="mb-3">
+          <Link
+            href={`/category/${article.category.slug}`}
+            className="text-xs font-semibold uppercase tracking-wider text-red-600 hover:underline"
+          >
+            {article.category.name}
+          </Link>
+        </div>
+
+        {/* Title */}
+        <h1 className="font-heading text-3xl md:text-4xl font-bold leading-tight text-[#09090B] mb-4">
+          {article.title}
+        </h1>
+
+        {/* Excerpt */}
+        <p className="text-lg text-[#6B7280] mb-5 leading-relaxed">{article.excerpt}</p>
+
+        {/* Author + date + reading time */}
+        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#E4E4E7]">
+          {article.author.profile?.avatarUrl ? (
+            <Image
+              src={article.author.profile.avatarUrl}
+              alt={article.author.name}
+              width={40}
+              height={40}
+              className="rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-[#E4E4E7] flex items-center justify-center text-sm font-semibold text-[#6B7280] flex-shrink-0 select-none">
+              {article.author.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <Link
+              href={`/author/${article.author.id}`}
+              className="text-sm font-semibold text-[#09090B] hover:underline"
+            >
+              {article.author.name}
+            </Link>
+            <p className="text-xs text-[#6B7280]">
+              {article.publishedAt
+                ? format(article.publishedAt, "d MMMM yyyy", { locale: idLocale })
+                : ""}
+              {" · "}
+              {minutes} menit baca
+            </p>
+          </div>
+        </div>
+
+        {/* Cover Image */}
+        {article.coverImageUrl && (
+          <div className="relative aspect-video w-full overflow-hidden rounded mb-8">
+            <Image
+              src={article.coverImageUrl}
+              alt={article.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
+              priority
+            />
+          </div>
+        )}
+
+        {/* Article Content */}
+        <div
+          className="article-content"
+          dangerouslySetInnerHTML={{ __html: safeContent }}
+        />
+
+        {/* Tags */}
+        {article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-[#E4E4E7]">
+            {article.tags.map(({ tag }) => (
+              <span
+                key={tag.id}
+                className="px-3 py-1 bg-[#F4F4F5] text-xs font-medium text-[#6B7280] rounded-full"
+              >
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Related Articles */}
+        {related.length > 0 && (
+          <section className="mt-10 pt-8 border-t border-[#E4E4E7]">
+            <h2 className="font-heading text-xl font-bold text-[#09090B] mb-5">
+              Artikel Terkait
+            </h2>
+            <div className="flex flex-col gap-4">
+              {related.map((rel) => (
+                <HorizontalCard key={rel.id} article={rel} />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    </>
+  )
+}
