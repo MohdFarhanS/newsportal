@@ -12,15 +12,13 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 | Language | TypeScript 5 |
 | Database | PostgreSQL + Prisma 7 (PG adapter) |
 | Auth | NextAuth v5 (beta) — Credentials provider, JWT |
-| UI | Shadcn/ui (radix-nova), Radix UI, Tailwind CSS v4 |
-| Rich Text | TipTap 3 |
-| Images | Cloudinary via Next Cloudinary |
+| UI | Shadcn/ui, Radix UI, Tailwind CSS v4 |
+| Rich Text | TipTap 3 (Phase 4) |
+| Images | Cloudinary via Next Cloudinary (Phase 4) |
 | Email | Resend |
-| Caching / Rate Limiting | Upstash Redis |
-| Data Fetching (client) | TanStack React Query v5 |
+| Rate Limiting | Upstash Redis |
 | Validasi | Zod v4 + React Hook Form |
-| Analytics | Vercel Analytics, Google Analytics |
-| Slug | Slugify |
+| Analytics | Vercel Analytics (Phase 8) |
 | Sanitasi HTML | Isomorphic DOMPurify |
 
 ---
@@ -29,19 +27,23 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 
 ### Publik
 - Homepage dengan seksi **Featured**, **Latest** (paginasi), dan **Trending** (7 hari terakhir)
+- Detail artikel dengan pelacakan view per IP (dedup 24 jam)
+- Halaman listing `/latest` dan `/category/[slug]` dengan paginasi
+- Halaman penulis `/author/[username]`
+- Pencarian + filter kategori / tag / rentang waktu (`/search`)
 - Navigasi kategori dinamis (6 kategori teratas)
-- Pelacakan view artikel per IP
-- Desain responsif (mobile-first)
+- Halaman Tentang dan Kontak
 
 ### Autentikasi & Otorisasi
 - Login / Register dengan email & password
-- Forgot password dengan token berbatas waktu (email via Resend)
+- Forgot password dengan token berbatas waktu 1 jam (email via Resend)
+- Reset password dengan invalidasi token setelah dipakai
 - Proteksi route berbasis peran: `USER`, `JOURNALIST`, `EDITOR`, `ADMIN`
-- Dashboard hanya bisa diakses peran non-USER
+- Re-validasi JWT ke DB setiap request (cek `isActive` + `passwordChangedAt`)
 
-### Manajemen Konten
+### Manajemen Konten *(Phase 4+)*
 - Status artikel: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
-- Artikel featured / non-featured
+- Artikel featured / non-featured (max 3, curation manual)
 - Kategori dan tag
 - Upload gambar ke Cloudinary
 - Editor rich text TipTap (link, image)
@@ -49,8 +51,8 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 ### Performa & Infrastruktur
 - Build dengan **Turbopack** (dev & production)
 - Connection pooling Prisma PG adapter
-- Rate limiting dengan Upstash
-- Optimasi gambar dengan `next/image` (Cloudinary remote pattern)
+- Rate limiting dengan Upstash (graceful skip jika env tidak ada)
+- Optimasi gambar dengan `next/image`
 
 ---
 
@@ -65,37 +67,83 @@ newsportal/
 ├── public/
 │   └── placeholder-article.jpg
 ├── src/
+│   ├── actions/
+│   │   └── auth.ts          # Server Actions (logout)
 │   ├── app/
-│   │   ├── layout.tsx       # Root layout (Navbar, font, metadata)
-│   │   └── page.tsx         # Homepage (Featured + Latest + Trending)
+│   │   ├── api/
+│   │   │   ├── articles/route.ts              # GET: search + filter artikel
+│   │   │   └── auth/
+│   │   │       ├── [...nextauth]/route.ts     # NextAuth handler
+│   │   │       ├── forgot-password/route.ts   # POST: kirim email reset
+│   │   │       ├── register/route.ts          # POST: daftar akun baru
+│   │   │       └── reset-password/route.ts    # POST: simpan password baru
+│   │   ├── article/[slug]/
+│   │   │   ├── ViewTracker.tsx               # Client component: track view
+│   │   │   └── page.tsx                      # Detail artikel
+│   │   ├── author/[username]/page.tsx         # Halaman penulis
+│   │   ├── category/[slug]/page.tsx           # Listing per kategori
+│   │   ├── forgot-password/
+│   │   │   ├── forgot-password-form.tsx
+│   │   │   └── page.tsx
+│   │   ├── latest/page.tsx                    # Listing semua artikel
+│   │   ├── login/
+│   │   │   ├── login-form.tsx
+│   │   │   └── page.tsx
+│   │   ├── register/
+│   │   │   ├── register-form.tsx
+│   │   │   └── page.tsx
+│   │   ├── reset-password/[token]/
+│   │   │   ├── reset-password-form.tsx
+│   │   │   └── page.tsx
+│   │   ├── search/page.tsx                    # Pencarian + filter
+│   │   ├── about/page.tsx
+│   │   ├── contact/page.tsx
+│   │   ├── globals.css
+│   │   ├── layout.tsx                         # Root layout (Navbar, font, metadata)
+│   │   └── page.tsx                           # Homepage
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── Navbar.tsx       # Header sticky + navigasi kategori
-│   │   │   └── Pagination.tsx   # Komponen paginasi dengan ellipsis
+│   │   │   ├── Footer.tsx
+│   │   │   ├── LogoutButton.tsx
+│   │   │   ├── Navbar.tsx                     # Header sticky + navigasi kategori
+│   │   │   └── Pagination.tsx                 # Paginasi dengan ellipsis
 │   │   ├── news/
-│   │   │   ├── ArticleCard.tsx      # HeroCard, HorizontalCard, SecondaryCard, NumberedCard
-│   │   │   ├── FeaturedSection.tsx  # Seksi artikel featured
-│   │   │   ├── LatestSection.tsx    # Seksi artikel terbaru + paginasi
-│   │   │   ├── SectionHeader.tsx    # Judul seksi dengan border merah
-│   │   │   └── TrendingSection.tsx  # Top 5 artikel trending
+│   │   │   ├── ArticleCard.tsx                # HeroCard, HorizontalCard, SecondaryCard, NumberedCard
+│   │   │   ├── FeaturedSection.tsx
+│   │   │   ├── LatestSection.tsx
+│   │   │   ├── SectionHeader.tsx
+│   │   │   └── TrendingSection.tsx
+│   │   ├── search/
+│   │   │   ├── FilterPanel.tsx                # Filter kategori / tag / tanggal
+│   │   │   ├── SearchClient.tsx               # Client: fetch + debounce + URL sync
+│   │   │   └── SearchResults.tsx              # Hasil + skeleton loading
 │   │   └── ui/
-│   │       └── button.tsx       # Shadcn Button component
+│   │       ├── button.tsx
+│   │       ├── dialog.tsx
+│   │       ├── input.tsx
+│   │       └── sheet.tsx
+│   ├── generated/
+│   │   └── prisma/                            # Prisma client (auto-generated)
 │   ├── lib/
-│   │   ├── articles.ts      # Query artikel (featured, latest, trending)
-│   │   ├── auth.ts          # Setup NextAuth + Credentials provider
-│   │   ├── auth.config.ts   # Callbacks JWT/session, proteksi route
-│   │   ├── categories.ts    # Query kategori navigasi
-│   │   ├── db.ts            # Prisma client singleton
-│   │   └── utils.ts         # Helper cn() untuk Tailwind
+│   │   ├── actions/
+│   │   │   └── view.ts                        # Server Action: pelacakan view artikel
+│   │   ├── hooks/
+│   │   │   └── use-debounce.ts                # Custom hook debounce
+│   │   ├── articles.ts                        # Query artikel (featured, latest, trending, search)
+│   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
+│   │   ├── auth.ts                            # NextAuth setup + re-validasi JWT ke DB
+│   │   ├── authors.ts                         # Query penulis
+│   │   ├── categories.ts                      # Query kategori
+│   │   ├── db.ts                              # Prisma client singleton
+│   │   ├── email.ts                           # Kirim email via Resend
+│   │   ├── rate-limit.ts                      # Rate limiter Upstash (nullable)
+│   │   ├── tags.ts                            # Query tag
+│   │   └── utils.ts                           # Helper cn() untuk Tailwind
 │   ├── schemas/
-│   │   └── auth.ts          # Zod schemas: login, register, reset password
+│   │   └── auth.ts                            # Zod schemas: login, register, reset password
 │   ├── types/
-│   │   └── next-auth.d.ts   # Augmentasi tipe NextAuth (id, role)
-│   ├── actions/             # Server Actions (belum diisi)
-│   ├── features/            # Feature modules (belum diisi)
-│   ├── hooks/               # Custom React hooks (belum diisi)
-│   ├── services/            # Service layer (belum diisi)
-│   └── middleware.ts        # NextAuth middleware (proteksi semua route)
+│   │   └── next-auth.d.ts                     # Augmentasi tipe NextAuth (id, role)
+│   └── middleware.ts                           # Proteksi route via NextAuth
 ├── components.json          # Konfigurasi Shadcn/ui
 ├── next.config.ts           # Konfigurasi Next.js (Cloudinary remote pattern)
 ├── prisma.config.ts         # Konfigurasi Prisma
@@ -140,7 +188,8 @@ enum ArticleStatus { DRAFT, REVIEW, PUBLISHED, REJECTED, SCHEDULED }
 
 - Node.js 18+
 - PostgreSQL (lokal atau cloud)
-- Akun Cloudinary, Upstash Redis, Resend
+- Akun Cloudinary, Resend
+- Akun Upstash Redis *(opsional — rate limiting di-skip jika env tidak ada)*
 
 ### 1. Clone & Install
 
@@ -161,7 +210,11 @@ DATABASE_URL="postgresql://user:password@localhost:5432/newsportal"
 # NextAuth
 AUTH_SECRET="your-secret-key-min-32-chars"
 
-# Cloudinary
+# Upstash Redis (opsional — rate limiting)
+UPSTASH_REDIS_REST_URL="https://your-url.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-token"
+
+# Cloudinary (dibutuhkan saat Phase 4 aktif)
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
@@ -171,9 +224,6 @@ RESEND_API_KEY="re_your-api-key"
 
 # App URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-
-# Analytics (opsional)
-NEXT_PUBLIC_GA_ID="G-XXXXXXXXXX"
 ```
 
 ### 3. Setup Database
@@ -221,7 +271,7 @@ Buka [http://localhost:3000](http://localhost:3000)
 |---------|-------------|-----------|
 | `HeroCard` | FeaturedSection | Kartu besar dengan gambar penuh, excerpt, info author |
 | `SecondaryCard` | FeaturedSection | Kartu medium dengan gambar, kategori, timestamp |
-| `HorizontalCard` | LatestSection | Kartu kompak horizontal dengan thumbnail kecil |
+| `HorizontalCard` | LatestSection, SearchResults | Kartu kompak horizontal dengan thumbnail kecil |
 | `NumberedCard` | TrendingSection | Kartu ranking dengan nomor urut dan jumlah views |
 
 ### Query Artikel (`src/lib/articles.ts`)
@@ -229,8 +279,14 @@ Buka [http://localhost:3000](http://localhost:3000)
 | Fungsi | Keterangan |
 |--------|------------|
 | `getFeaturedArticles()` | 3 artikel published + isFeatured=true, urut publishedAt DESC |
-| `getLatestArticles(page, perPage)` | Paginasi artikel published, default 6/halaman |
+| `getLatestArticles(page, perPage)` | Paginasi artikel published non-featured, default 6/halaman |
+| `getAllPublishedArticles(page, perPage)` | Semua artikel published (termasuk featured), default 12/halaman |
 | `getTrendingArticles()` | Top 5 artikel by views dalam 7 hari terakhir |
+| `getArticleBySlug(slug)` | Detail artikel tunggal + tags (memoized dengan React `cache`) |
+| `getRelatedArticles(categoryId, excludeSlug)` | 3 artikel terkait dalam kategori sama |
+| `getArticlesByCategory(slug, page, perPage)` | Artikel per kategori, default 12/halaman |
+| `getArticlesByAuthor(authorId, page, perPage)` | Artikel per penulis, default 12/halaman |
+| `searchArticles(params)` | Full-text search + filter kategori / tag / tanggal |
 
 ---
 
@@ -241,10 +297,12 @@ Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
 | Route | Akses |
 |-------|-------|
 | `/dashboard/*` | Login + role bukan USER |
-| `/login`, `/register`, `/forgot-password` | Redirect ke `/` jika sudah login |
+| `/login`, `/register`, `/forgot-password`, `/reset-password/*` | Redirect ke `/` jika sudah login |
 | Semua route lain | Publik |
 
 Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ico`, file PNG.
+
+> Auth split-config pattern: `auth.config.ts` dipakai di middleware (edge runtime, tanpa DB query). `auth.ts` dipakai di server context dengan re-validasi JWT ke DB setiap request.
 
 ---
 
@@ -252,31 +310,18 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 
 - **Heading:** Newsreader (Google Fonts, serif)
 - **Body:** Roboto (Google Fonts, sans-serif)
-- **Mono:** Geist Mono
 
 ---
 
-## Migrasi Database
+## Status Implementasi
 
-| Migrasi | Perubahan |
-|---------|-----------|
-| `20260620191108_init` | Skema awal: semua model |
-| `20260620203640_add_featured_article` | Tambah field `isFeatured` ke Article |
-| `20260620225438_drop_account_session_add_password_reset_token` | Hapus tabel OAuth (Account, Session), tambah PasswordResetToken |
-
----
-
-## Deployment
-
-Proyek ini siap deploy ke **Vercel**. Pastikan semua environment variables dikonfigurasi di dashboard Vercel.
-
-Untuk database production, disarankan menggunakan layanan managed PostgreSQL seperti:
-- [Neon](https://neon.tech)
-- [Supabase](https://supabase.com)
-- [Railway](https://railway.app)
-
-Setelah deploy, jalankan migrasi:
-
-```bash
-npx prisma migrate deploy
-```
+| Phase | Fitur | Status |
+|-------|-------|--------|
+| Phase 1 | Project Setup & Foundation | Selesai |
+| Phase 2 | Public News Website | Selesai |
+| Phase 3 | Authentication & User Features | Sebagian (Profile & Change Password belum) |
+| Phase 4 | CMS Dashboard | Belum dimulai |
+| Phase 5 | Editorial Workflow | Belum dimulai |
+| Phase 6 | Analytics Dashboard | Belum dimulai |
+| Phase 7 | SEO Optimization | Belum dimulai |
+| Phase 8 | Production Ready | Belum dimulai |

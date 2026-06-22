@@ -3,7 +3,6 @@ import { Newsreader, Roboto } from "next/font/google"
 import "./globals.css"
 import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
-import { QueryProvider } from "@/providers/query-provider"
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",
@@ -37,13 +36,10 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${newsreader.variable} ${roboto.variable} antialiased bg-[#FAFAFA]`}>
-        <QueryProvider>
-          <Navbar />
-          {children}
-          <Footer />
-        </QueryProvider>
+        <Navbar />
+        {children}
+        <Footer />
       </body>
     </html>
   )
 }
-

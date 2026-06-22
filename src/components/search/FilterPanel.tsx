@@ -10,8 +10,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-type Category = { id: string; name: string; slug: string }
-type Tag = { id: string; name: string; slug: string }
+export type Category = { id: string; name: string; slug: string }
+export type Tag = { id: string; name: string; slug: string }
 
 const DATE_PRESETS = [
   { label: "Semua", value: "" },
