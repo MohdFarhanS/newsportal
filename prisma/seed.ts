@@ -35,6 +35,17 @@ async function main() {
     prisma.category.upsert({ where: { slug: 'politik' }, update: {}, create: { name: 'Politik', slug: 'politik', description: 'Berita politik nasional' } }),
   ])
 
+  await Promise.all([
+    prisma.tag.upsert({ where: { slug: 'breaking-news' }, update: {}, create: { name: 'Breaking News', slug: 'breaking-news' } }),
+    prisma.tag.upsert({ where: { slug: 'eksklusif' }, update: {}, create: { name: 'Eksklusif', slug: 'eksklusif' } }),
+    prisma.tag.upsert({ where: { slug: 'analisis' }, update: {}, create: { name: 'Analisis', slug: 'analisis' } }),
+    prisma.tag.upsert({ where: { slug: 'opini' }, update: {}, create: { name: 'Opini', slug: 'opini' } }),
+    prisma.tag.upsert({ where: { slug: 'investigasi' }, update: {}, create: { name: 'Investigasi', slug: 'investigasi' } }),
+    prisma.tag.upsert({ where: { slug: 'infografis' }, update: {}, create: { name: 'Infografis', slug: 'infografis' } }),
+    prisma.tag.upsert({ where: { slug: 'video' }, update: {}, create: { name: 'Video', slug: 'video' } }),
+    prisma.tag.upsert({ where: { slug: 'podcast' }, update: {}, create: { name: 'Podcast', slug: 'podcast' } }),
+  ])
+
   const now = new Date()
   const hoursAgo = (h: number) => new Date(now.getTime() - h * 60 * 60 * 1000)
   
@@ -147,6 +158,7 @@ async function main() {
   console.log('Seed selesai:')
   console.log('  - 1 author  ->  journalist@newsportal.com / password123')
   console.log('  - 6 categories')
+  console.log('  - 8 tags')
   console.log('  - 3 featured articles')
   console.log('  - 8 regular articles')
   console.log('  - ArticleView records untuk Trending section')

@@ -12,9 +12,9 @@ export const metadata: Metadata = { title: "Artikel Saya" }
 const STATUS_LABEL: Record<ArticleStatus, string> = {
   DRAFT: "Draft",
   REVIEW: "Review",
-  REJECTED: "Ditolak",
-  SCHEDULED: "Terjadwal",
-  PUBLISHED: "Tayang",
+  REJECTED: "Rejected",
+  SCHEDULED: "Scheduled",
+  PUBLISHED: "Published",
 }
 
 const STATUS_CLASS: Record<ArticleStatus, string> = {

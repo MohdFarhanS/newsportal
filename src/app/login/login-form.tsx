@@ -30,8 +30,8 @@ export default function LoginForm() {
       setServerError("Email atau kata sandi salah.")
       return
     }
-    const raw = searchParams.get("callbackUrl") ?? "/dashboard"
-    const callbackUrl = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard"
+    const raw = searchParams.get("callbackUrl") ?? "/"
+    const callbackUrl = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/"
     router.push(callbackUrl)
     router.refresh()
   }

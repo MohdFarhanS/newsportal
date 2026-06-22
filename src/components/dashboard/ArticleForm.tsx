@@ -220,7 +220,7 @@ export default function ArticleForm({ initialData, categories, tags }: Props) {
           <img
             src={coverPreview}
             alt="Cover preview"
-            className="mb-2 h-32 w-full object-cover rounded-sm"
+            className="mb-2 max-h-48 max-w-full rounded-sm"
           />
         )}
         {canEdit && (

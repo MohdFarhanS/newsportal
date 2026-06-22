@@ -126,7 +126,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
       )}
       <EditorContent
         editor={editor}
-        className="prose prose-sm max-w-none min-h-[280px] py-3 focus-within:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[280px]"
+        className="article-content min-h-[280px] py-3 focus-within:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[280px]"
       />
     </div>
   )

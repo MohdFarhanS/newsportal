@@ -32,11 +32,6 @@ export const authConfig = {
       const role = auth?.user?.role
 
       const isDashboardRoute = nextUrl.pathname.startsWith("/dashboard")
-      const isAuthRoute =
-        nextUrl.pathname.startsWith("/login") ||
-        nextUrl.pathname.startsWith("/register") ||
-        nextUrl.pathname.startsWith("/forgot-password") ||
-        nextUrl.pathname.startsWith("/reset-password")
 
       if (isDashboardRoute && !isLoggedIn) return false
 
@@ -46,8 +41,6 @@ export const authConfig = {
         )
         if (!isAllowed) return Response.redirect(new URL("/", nextUrl))
       }
-
-      if (isAuthRoute && isLoggedIn) return Response.redirect(new URL("/", nextUrl))
 
       return true
     },
