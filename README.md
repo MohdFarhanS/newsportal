@@ -1,4 +1,4 @@
-# NewsPortal
+﻿# NewsPortal
 
 Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menampilkan artikel terkurasi, sistem manajemen konten berbasis peran, dan pelacakan artikel trending secara real-time.
 
@@ -70,7 +70,13 @@ newsportal/
 │   ├── schema.prisma        # Definisi skema database
 │   └── seed.ts              # Script seeding data contoh
 ├── public/
-│   └── placeholder-article.jpg
+│   ├── placeholder-article.jpg       # Fallback gambar artikel (ArticleCard)
+│   ├── placeholder-tech.svg          # Placeholder seed: Teknologi
+│   ├── placeholder-biz.svg           # Placeholder seed: Bisnis
+│   ├── placeholder-sport.svg         # Placeholder seed: Olahraga
+│   ├── placeholder-ent.svg           # Placeholder seed: Hiburan
+│   ├── placeholder-health.svg        # Placeholder seed: Kesehatan
+│   └── placeholder-pol.svg           # Placeholder seed: Politik
 ├── src/
 │   ├── actions/
 │   │   ├── auth.ts          # Server Actions (logout, changePasswordAction)
@@ -258,7 +264,7 @@ npm run db:seed
 Data seed mencakup:
 - 1 akun journalist: `journalist@newsportal.com` / `password123`
 - 6 kategori: Teknologi, Bisnis, Olahraga, Hiburan, Kesehatan, Politik
-- 11 artikel contoh (3 featured, 8 regular)
+- 11 artikel contoh (3 featured, 8 regular) — masing-masing dengan `coverImageUrl` dari SVG placeholder lokal per kategori (`/placeholder-{kategori}.svg` di `public/`)
 
 Untuk testing semua role di development, jalankan juga:
 ```bash

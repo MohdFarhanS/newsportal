@@ -1,4 +1,4 @@
-import 'dotenv/config'
+﻿import 'dotenv/config'
 import { PrismaClient } from '../src/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { ArticleStatus, Role } from '../src/generated/prisma/enums'
@@ -37,6 +37,7 @@ async function main() {
 
   const now = new Date()
   const hoursAgo = (h: number) => new Date(now.getTime() - h * 60 * 60 * 1000)
+  
 
   const featured1 = await prisma.article.upsert({
     where: { slug: 'revolusi-ai-mengubah-industri-media-2026' },
@@ -46,6 +47,7 @@ async function main() {
       slug: 'revolusi-ai-mengubah-industri-media-2026',
       excerpt: 'Kecerdasan buatan semakin mengintegrasikan diri ke dalam redaksi berita, membawa perubahan besar pada cara konten diproduksi dan dikonsumsi.',
       content: '<p>Kecerdasan buatan (AI) kini menjadi bagian tak terpisahkan dari ruang redaksi modern.</p>',
+      coverImageUrl: '/placeholder-tech.svg',
       status: ArticleStatus.PUBLISHED,
       isFeatured: true,
       publishedAt: hoursAgo(1),
@@ -62,6 +64,7 @@ async function main() {
       slug: 'startup-fintech-series-b-500-miliar',
       excerpt: 'Salah satu startup fintech terbesar Indonesia berhasil menutup pendanaan Series B senilai Rp 500 miliar dari investor asing dan domestik.',
       content: '<p>Startup fintech ini berhasil menarik minat investor besar dari Singapura dan Amerika Serikat.</p>',
+      coverImageUrl: '/placeholder-biz.svg',
       status: ArticleStatus.PUBLISHED,
       isFeatured: true,
       publishedAt: hoursAgo(3),
@@ -78,6 +81,7 @@ async function main() {
       slug: 'timnas-indonesia-lolos-final-piala-aff-2026',
       excerpt: 'Skuad Garuda berhasil mengalahkan Thailand 2-1 dan melaju ke babak final Piala AFF untuk pertama kalinya dalam sejarah turnamen.',
       content: '<p>Pertandingan semifinal yang berlangsung di Stadion Gelora Bung Karno berlangsung penuh drama.</p>',
+      coverImageUrl: '/placeholder-sport.svg',
       status: ArticleStatus.PUBLISHED,
       isFeatured: true,
       publishedAt: hoursAgo(5),
@@ -87,14 +91,14 @@ async function main() {
   })
 
   const regularData = [
-    { title: 'Film Adaptasi Novel Terlaris Tayang Perdana di Bioskop', slug: 'film-adaptasi-novel-terlaris-tayang-perdana', categoryId: hiburan.id, hoursAgo: 8 },
-    { title: 'Cara Menjaga Kesehatan Mental di Era Digital', slug: 'cara-menjaga-kesehatan-mental-era-digital', categoryId: kesehatan.id, hoursAgo: 12 },
-    { title: 'Pemerintah Luncurkan Program Digitalisasi UMKM Nasional', slug: 'pemerintah-luncurkan-program-digitalisasi-umkm', categoryId: politik.id, hoursAgo: 16 },
-    { title: 'Inovasi Baterai Solid-State Percepat Adopsi Kendaraan Listrik', slug: 'inovasi-baterai-solid-state-kendaraan-listrik', categoryId: teknologi.id, hoursAgo: 20 },
-    { title: 'Indeks Harga Saham Gabungan Tembus 8.000 Poin', slug: 'ihsg-tembus-8000-poin-rekor-baru', categoryId: bisnis.id, hoursAgo: 24 },
-    { title: 'Peneliti Temukan Kandidat Vaksin Dengue Generasi Baru', slug: 'peneliti-temukan-kandidat-vaksin-dengue-baru', categoryId: kesehatan.id, hoursAgo: 30 },
-    { title: 'Liga 1 Indonesia: Persija Pimpin Klasemen Setelah Pekan ke-20', slug: 'liga-1-persija-pimpin-klasemen-pekan-20', categoryId: olahraga.id, hoursAgo: 36 },
-    { title: 'Pameran Seni Kontemporer Terbesar Hadir di Jakarta Convention Center', slug: 'pameran-seni-kontemporer-terbesar-jakarta', categoryId: hiburan.id, hoursAgo: 48 },
+    { title: 'Film Adaptasi Novel Terlaris Tayang Perdana di Bioskop', slug: 'film-adaptasi-novel-terlaris-tayang-perdana', categoryId: hiburan.id, coverImage: '/placeholder-ent.svg', hoursAgo: 8 },
+    { title: 'Cara Menjaga Kesehatan Mental di Era Digital', slug: 'cara-menjaga-kesehatan-mental-era-digital', categoryId: kesehatan.id, coverImage: '/placeholder-health.svg', hoursAgo: 12 },
+    { title: 'Pemerintah Luncurkan Program Digitalisasi UMKM Nasional', slug: 'pemerintah-luncurkan-program-digitalisasi-umkm', categoryId: politik.id, coverImage: '/placeholder-pol.svg', hoursAgo: 16 },
+    { title: 'Inovasi Baterai Solid-State Percepat Adopsi Kendaraan Listrik', slug: 'inovasi-baterai-solid-state-kendaraan-listrik', categoryId: teknologi.id, coverImage: '/placeholder-tech.svg', hoursAgo: 20 },
+    { title: 'Indeks Harga Saham Gabungan Tembus 8.000 Poin', slug: 'ihsg-tembus-8000-poin-rekor-baru', categoryId: bisnis.id, coverImage: '/placeholder-biz.svg', hoursAgo: 24 },
+    { title: 'Peneliti Temukan Kandidat Vaksin Dengue Generasi Baru', slug: 'peneliti-temukan-kandidat-vaksin-dengue-baru', categoryId: kesehatan.id, coverImage: '/placeholder-health.svg', hoursAgo: 30 },
+    { title: 'Liga 1 Indonesia: Persija Pimpin Klasemen Setelah Pekan ke-20', slug: 'liga-1-persija-pimpin-klasemen-pekan-20', categoryId: olahraga.id, coverImage: '/placeholder-sport.svg', hoursAgo: 36 },
+    { title: 'Pameran Seni Kontemporer Terbesar Hadir di Jakarta Convention Center', slug: 'pameran-seni-kontemporer-terbesar-jakarta', categoryId: hiburan.id, coverImage: '/placeholder-ent.svg', hoursAgo: 48 },
   ]
 
   for (const data of regularData) {
@@ -106,6 +110,7 @@ async function main() {
         slug: data.slug,
         excerpt: `Baca selengkapnya tentang ${data.title.toLowerCase()} dan dampaknya bagi masyarakat Indonesia.`,
         content: `<p>Artikel lengkap tentang ${data.title}.</p>`,
+        coverImageUrl: data.coverImage,
         status: ArticleStatus.PUBLISHED,
         isFeatured: false,
         publishedAt: hoursAgo(data.hoursAgo),
