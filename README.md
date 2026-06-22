@@ -130,7 +130,7 @@ newsportal/
 │   │   │   └── SearchResults.tsx              # Hasil + skeleton loading
 │   │   └── ui/
 │   │   ├── dashboard/
-│   │   │   ├── DashboardNav.tsx              # Sidebar nav (active link, disabled items)
+│   │   │   ├── DashboardNav.tsx              # Sidebar nav role-aware (USER/JOURNALIST/EDITOR/ADMIN)
 │   │   │   ├── ProfileForm.tsx               # Avatar + profile fields (Client Component)
 │   │   │   └── ChangePasswordForm.tsx        # Change password form (Client Component)
 │   │   └── ui/
@@ -260,6 +260,12 @@ Data seed mencakup:
 - 6 kategori: Teknologi, Bisnis, Olahraga, Hiburan, Kesehatan, Politik
 - 11 artikel contoh (3 featured, 8 regular)
 
+Untuk testing semua role di development, jalankan juga:
+```bash
+npx tsx prisma/seed-test-accounts.ts
+```
+Membuat akun: `user@test.com`, `journalist@test.com`, `editor@test.com`, `admin@test.com` — semua dengan password `password123`.
+
 ### 4. Jalankan Development Server
 
 ```bash
@@ -279,6 +285,7 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `start` | `next start` | Jalankan production server |
 | `lint` | `eslint` | Linting kode |
 | `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh ke database |
+| `db:seed-test` | `npx tsx prisma/seed-test-accounts.ts` | Buat akun test untuk semua role (dev only) |
 
 ---
 
@@ -340,7 +347,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 1 | Project Setup & Foundation | Selesai |
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
-| Phase 4 | CMS Dashboard | Belum dimulai |
+| Phase 4 | CMS Dashboard | Sedang dikerjakan (Dashboard Layout ✓) |
 | Phase 5 | Editorial Workflow | Belum dimulai |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Belum dimulai |
