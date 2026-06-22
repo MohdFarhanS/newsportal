@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import type { Role } from "@/generated/prisma/client"
 
 type NavItem = {
   href: string
@@ -15,25 +16,59 @@ type NavSection = {
   items: NavItem[]
 }
 
-const sections: NavSection[] = [
-  {
-    label: "Akun Saya",
-    items: [
-      { href: "/dashboard/profile", label: "Profil" },
-      { href: "/dashboard/security", label: "Keamanan" },
-    ],
-  },
-  {
-    label: "Aktivitas",
-    items: [
-      { href: "/dashboard/bookmarks", label: "Bookmark", disabled: true },
-      { href: "/dashboard/history", label: "Riwayat Baca", disabled: true },
-    ],
-  },
-]
+function getSections(role: Role): NavSection[] {
+  const sections: NavSection[] = [
+    {
+      label: "Akun Saya",
+      items: [
+        { href: "/dashboard/profile", label: "Profil" },
+        { href: "/dashboard/security", label: "Keamanan" },
+      ],
+    },
+    {
+      label: "Aktivitas",
+      items: [
+        { href: "/dashboard/bookmarks", label: "Bookmark", disabled: true },
+        { href: "/dashboard/history", label: "Riwayat Baca", disabled: true },
+      ],
+    },
+  ]
 
-export default function DashboardNav() {
+  if (role === "JOURNALIST" || role === "EDITOR" || role === "ADMIN") {
+    sections.push({
+      label: "Konten",
+      items: [
+        { href: "/dashboard/articles", label: "Artikel Saya", disabled: true },
+        { href: "/dashboard/articles/new", label: "Tulis Artikel", disabled: true },
+      ],
+    })
+  }
+
+  if (role === "EDITOR" || role === "ADMIN") {
+    sections.push({
+      label: "Redaksi",
+      items: [
+        { href: "/dashboard/review", label: "Antrian Review", disabled: true },
+      ],
+    })
+  }
+
+  if (role === "ADMIN") {
+    sections.push({
+      label: "Admin",
+      items: [
+        { href: "/dashboard/users", label: "Pengguna", disabled: true },
+        { href: "/dashboard/taxonomy", label: "Taksonomi", disabled: true },
+      ],
+    })
+  }
+
+  return sections
+}
+
+export default function DashboardNav({ role }: { role: Role }) {
   const pathname = usePathname()
+  const sections = getSections(role)
 
   return (
     <nav className="space-y-6">

@@ -12,6 +12,8 @@ export default async function DashboardLayout({
   const session = await auth()
   if (!session?.user) redirect("/login")
 
+  const role = session.user.role
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-56px)]">
       <div className="flex gap-10">
@@ -22,7 +24,7 @@ export default async function DashboardLayout({
             NewsPortal
           </p>
           <div className="h-[2px] bg-red-600 mb-5" />
-          <DashboardNav />
+          <DashboardNav role={role} />
         </aside>
 
         {/* Mobile nav trigger */}
@@ -40,7 +42,7 @@ export default async function DashboardLayout({
                 NewsPortal
               </p>
               <div className="h-[2px] bg-red-600 mb-5" />
-              <DashboardNav />
+              <DashboardNav role={role} />
             </SheetContent>
           </Sheet>
         </div>
