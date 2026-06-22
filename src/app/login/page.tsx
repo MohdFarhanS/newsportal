@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
 import LoginForm from "./login-form"
 
 export const metadata: Metadata = { title: "Masuk" }
@@ -17,6 +19,9 @@ function getEdisiDate() {
 type Props = { searchParams: Promise<{ reset?: string }> }
 
 export default async function LoginPage({ searchParams }: Props) {
+  const session = await auth()
+  if (session) redirect("/")
+
   const edisi = getEdisiDate()
   const { reset } = await searchParams
 

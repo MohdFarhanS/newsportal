@@ -264,6 +264,7 @@ npm run db:seed
 Data seed mencakup:
 - 1 akun journalist: `journalist@newsportal.com` / `password123`
 - 6 kategori: Teknologi, Bisnis, Olahraga, Hiburan, Kesehatan, Politik
+- 8 tag: Breaking News, Eksklusif, Analisis, Opini, Investigasi, Infografis, Video, Podcast
 - 11 artikel contoh (3 featured, 8 regular) — masing-masing dengan `coverImageUrl` dari SVG placeholder lokal per kategori (`/placeholder-{kategori}.svg` di `public/`)
 
 Untuk testing semua role di development, jalankan juga:
@@ -330,12 +331,14 @@ Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
 |-------|-------|
 | `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | Semua role yang sudah login |
 | `/dashboard/*` lainnya | Login + role bukan USER (JOURNALIST/EDITOR/ADMIN) |
-| `/login`, `/register`, `/forgot-password`, `/reset-password/*` | Redirect ke `/` jika sudah login |
+| `/login`, `/register` | Redirect ke `/` jika sudah login (dicek di page-level via `auth()`) |
 | Semua route lain | Publik |
 
 Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ico`, file PNG.
 
 > Auth split-config pattern: `auth.config.ts` dipakai di middleware (edge runtime, tanpa DB query). `auth.ts` dipakai di server context dengan re-validasi JWT ke DB setiap request.
+>
+> **Penting:** Guard untuk auth pages (`/login`, `/register`) **tidak** ada di middleware karena middleware tidak bisa query DB — stale JWT cookie bisa menyebabkan false positive. Guard diimplementasi di page-level menggunakan `auth()` dari `auth.ts` yang DB-validated.
 
 ---
 
@@ -353,7 +356,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 1 | Project Setup & Foundation | Selesai |
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
-| Phase 4 | CMS Dashboard | Sedang dikerjakan (Dashboard Layout ✓) |
+| Phase 4 | CMS Dashboard | Sedang dikerjakan (Layout ✓, Article List/Create/Edit/Submit ✓) |
 | Phase 5 | Editorial Workflow | Belum dimulai |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Belum dimulai |
