@@ -14,7 +14,7 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 | Auth | NextAuth v5 (beta) — Credentials provider, JWT |
 | UI | Shadcn/ui, Radix UI, Tailwind CSS v4 |
 | Rich Text | TipTap 3 (Phase 4) |
-| Images | Cloudinary via Next Cloudinary (Phase 4) |
+| Images | Cloudinary via Next Cloudinary |
 | Email | Resend |
 | Rate Limiting | Upstash Redis |
 | Validasi | Zod v4 + React Hook Form |
@@ -40,6 +40,11 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 - Reset password dengan invalidasi token setelah dipakai
 - Proteksi route berbasis peran: `USER`, `JOURNALIST`, `EDITOR`, `ADMIN`
 - Re-validasi JWT ke DB setiap request (cek `isActive` + `passwordChangedAt`)
+
+### Dashboard Pengguna
+- Edit profil: nama, bio, link sosial media
+- Upload avatar (PNG / JPEG / WebP, maks 5 MB, force square crop via Cloudinary)
+- Ganti password
 
 ### Manajemen Konten *(Phase 4+)*
 - Status artikel: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
@@ -132,7 +137,8 @@ newsportal/
 │   │       ├── button.tsx
 │   │       ├── dialog.tsx
 │   │       ├── input.tsx
-│   │       └── sheet.tsx
+│   │       ├── sheet.tsx
+│   │       └── upload-widget.tsx  # Themed wrapper CldUploadWidget
 │   ├── generated/
 │   │   └── prisma/                            # Prisma client (auto-generated)
 │   ├── lib/
@@ -226,10 +232,11 @@ AUTH_SECRET="your-secret-key-min-32-chars"
 UPSTASH_REDIS_REST_URL="https://your-url.upstash.io"
 UPSTASH_REDIS_REST_TOKEN="your-token"
 
-# Cloudinary (dibutuhkan saat Phase 4 aktif)
+# Cloudinary (avatar upload Phase 3, cover image Phase 4)
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
 
 # Email (Resend)
 RESEND_API_KEY="re_your-api-key"

@@ -5,11 +5,11 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import Image from "next/image"
-import { CldUploadWidget } from "next-cloudinary"
 import { profileSchema, type ProfileInput } from "@/schemas/profile"
 import { updateProfileAction } from "@/actions/profile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { UploadWidget } from "@/components/ui/upload-widget"
 
 const inputClass =
   "border-0 border-b border-zinc-300 rounded-none px-0 py-2.5 h-auto shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-zinc-900 bg-transparent placeholder:text-zinc-300 text-sm"
@@ -71,8 +71,9 @@ export default function ProfileForm({ initialValues }: Props) {
               Foto
             </div>
           )}
-          <CldUploadWidget
+          <UploadWidget
             uploadPreset="newsportal_avatars"
+            options={{ cropping: true, croppingAspectRatio: 1 }}
             onSuccess={(result) => {
               if (
                 result.info &&
@@ -92,7 +93,7 @@ export default function ProfileForm({ initialValues }: Props) {
                 {avatarUrl ? "Ganti Foto" : "Upload Foto"}
               </button>
             )}
-          </CldUploadWidget>
+          </UploadWidget>
         </div>
       </div>
 
