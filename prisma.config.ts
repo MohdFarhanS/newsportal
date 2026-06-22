@@ -8,6 +8,7 @@ export default defineConfig({
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // ponytail: fallback agar prisma generate tidak crash saat build (generate tidak butuh koneksi DB)
+    url: process.env["DIRECT_URL"] ?? "postgresql://localhost/placeholder",
   },
 });

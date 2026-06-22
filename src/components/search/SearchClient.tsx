@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Search } from "lucide-react"
 import { useDebounce } from "@/lib/hooks/use-debounce"
 import { Input } from "@/components/ui/input"
@@ -19,7 +20,7 @@ type SearchApiResponse = {
   meta: { total: number; page: number; totalPages: number; perPage: number }
 }
 
-async function fetchArticles(params: URLSearchParams, signal?: AbortSignal): Promise<SearchApiResponse> {
+async function fetchArticles(params: URLSearchParams, signal: AbortSignal): Promise<SearchApiResponse> {
   const res = await fetch(`/api/articles?${params.toString()}`, { signal })
   if (!res.ok) throw new Error("Search request failed")
   return res.json()
@@ -39,43 +40,26 @@ export default function SearchClient({ initialCategories, initialTags }: SearchC
   const [inputValue, setInputValue] = useState(urlQuery)
   const debouncedQuery = useDebounce(inputValue, 300)
 
-  const [data, setData] = useState<SearchApiResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isError, setIsError] = useState(false)
+  const params = new URLSearchParams()
+  if (urlQuery) params.set("search", urlQuery)
+  if (urlCategory) params.set("category", urlCategory)
+  if (urlTag) params.set("tag", urlTag)
+  if (urlDate) params.set("date", urlDate)
+  if (urlPage > 1) params.set("page", String(urlPage))
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["articles", urlQuery, urlCategory, urlTag, urlDate, urlPage],
+    queryFn: ({ signal }) => fetchArticles(params, signal),
+  })
 
   useEffect(() => {
     if (debouncedQuery === urlQuery) return
-    const params = new URLSearchParams(searchParams.toString())
-    if (debouncedQuery) params.set("q", debouncedQuery)
-    else params.delete("q")
-    params.delete("page")
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    const next = new URLSearchParams(searchParams.toString())
+    if (debouncedQuery) next.set("q", debouncedQuery)
+    else next.delete("q")
+    next.delete("page")
+    router.push(`${pathname}?${next.toString()}`, { scroll: false })
   }, [debouncedQuery]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const params = new URLSearchParams()
-    if (urlQuery) params.set("search", urlQuery)
-    if (urlCategory) params.set("category", urlCategory)
-    if (urlTag) params.set("tag", urlTag)
-    if (urlDate) params.set("date", urlDate)
-    if (urlPage > 1) params.set("page", String(urlPage))
-
-    setIsLoading(true)
-    setIsError(false)
-    fetchArticles(params, controller.signal)
-      .then((d) => {
-        setData(d)
-        setIsLoading(false)
-      })
-      .catch(() => {
-        if (controller.signal.aborted) return
-        setIsError(true)
-        setIsLoading(false)
-      })
-
-    return () => controller.abort()
-  }, [urlQuery, urlCategory, urlTag, urlDate, urlPage])
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())

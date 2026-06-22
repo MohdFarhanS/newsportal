@@ -18,6 +18,7 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 | Email | Resend |
 | Rate Limiting | Upstash Redis |
 | Validasi | Zod v4 + React Hook Form |
+| Data Fetching | TanStack Query v5 |
 | Analytics | Vercel Analytics (Phase 8) |
 | Sanitasi HTML | Isomorphic DOMPurify |
 
@@ -130,9 +131,11 @@ newsportal/
 │   │   │   ├── LatestSection.tsx
 │   │   │   ├── SectionHeader.tsx
 │   │   │   └── TrendingSection.tsx
+│   │   ├── providers/
+│   │   │   └── QueryProvider.tsx              # TanStack Query QueryClientProvider wrapper
 │   │   ├── search/
 │   │   │   ├── FilterPanel.tsx                # Filter kategori / tag / tanggal
-│   │   │   ├── SearchClient.tsx               # Client: fetch + debounce + URL sync
+│   │   │   ├── SearchClient.tsx               # Client: useQuery + debounce + URL sync
 │   │   │   └── SearchResults.tsx              # Hasil + skeleton loading
 │   │   └── ui/
 │   │   ├── dashboard/

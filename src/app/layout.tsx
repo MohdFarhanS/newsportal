@@ -4,6 +4,7 @@ import "./globals.css"
 import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
 import { Toaster } from "sonner"
+import QueryProvider from "@/components/providers/QueryProvider"
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",
@@ -37,9 +38,11 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${newsreader.variable} ${roboto.variable} antialiased bg-[#FAFAFA]`}>
-        <Navbar />
-        {children}
-        <Footer />
+        <QueryProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </QueryProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
