@@ -38,8 +38,8 @@ function getSections(role: Role): NavSection[] {
     sections.push({
       label: "Konten",
       items: [
-        { href: "/dashboard/articles", label: "Artikel Saya", disabled: true },
-        { href: "/dashboard/articles/new", label: "Tulis Artikel", disabled: true },
+        { href: "/dashboard/articles", label: "Artikel Saya" },
+        { href: "/dashboard/articles/new", label: "Tulis Artikel" },
       ],
     })
   }

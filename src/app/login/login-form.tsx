@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { loginSchema, type LoginInput } from "@/schemas/auth"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ const inputClass =
 
 export default function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [serverError, setServerError] = useState<string | null>(null)
   const {
     register,
@@ -29,7 +30,9 @@ export default function LoginForm() {
       setServerError("Email atau kata sandi salah.")
       return
     }
-    router.push("/")
+    const raw = searchParams.get("callbackUrl") ?? "/dashboard"
+    const callbackUrl = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard"
+    router.push(callbackUrl)
     router.refresh()
   }
 
