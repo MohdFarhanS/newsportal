@@ -1,6 +1,6 @@
-import { z } from "zod"
+﻿import { z } from "zod"
 
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(8, "Password minimal 8 karakter")
   .regex(/[a-zA-Z]/, "Password harus mengandung huruf")

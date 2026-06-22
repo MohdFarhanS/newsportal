@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth"
 
 const USER_ALLOWED_DASHBOARD_ROUTES = [
+  "/dashboard",
   "/dashboard/profile",
   "/dashboard/security",
   "/dashboard/bookmarks",

@@ -68,7 +68,8 @@ newsportal/
 │   └── placeholder-article.jpg
 ├── src/
 │   ├── actions/
-│   │   └── auth.ts          # Server Actions (logout)
+│   │   ├── auth.ts          # Server Actions (logout, changePasswordAction)
+│   │   └── profile.ts       # Server Actions (updateProfileAction)
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
@@ -95,6 +96,11 @@ newsportal/
 │   │   ├── reset-password/[token]/
 │   │   │   ├── reset-password-form.tsx
 │   │   │   └── page.tsx
+│   │   ├── dashboard/
+│   │   │   ├── layout.tsx                    # Sidebar + auth guard
+│   │   │   ├── page.tsx                      # Overview
+│   │   │   ├── profile/page.tsx              # FR-UM-01
+│   │   │   └── security/page.tsx             # FR-UM-02
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
 │   │   ├── contact/page.tsx
@@ -118,6 +124,11 @@ newsportal/
 │   │   │   ├── SearchClient.tsx               # Client: fetch + debounce + URL sync
 │   │   │   └── SearchResults.tsx              # Hasil + skeleton loading
 │   │   └── ui/
+│   │   ├── dashboard/
+│   │   │   ├── DashboardNav.tsx              # Sidebar nav (active link, disabled items)
+│   │   │   ├── ProfileForm.tsx               # Avatar + profile fields (Client Component)
+│   │   │   └── ChangePasswordForm.tsx        # Change password form (Client Component)
+│   │   └── ui/
 │   │       ├── button.tsx
 │   │       ├── dialog.tsx
 │   │       ├── input.tsx
@@ -140,7 +151,8 @@ newsportal/
 │   │   ├── tags.ts                            # Query tag
 │   │   └── utils.ts                           # Helper cn() untuk Tailwind
 │   ├── schemas/
-│   │   └── auth.ts                            # Zod schemas: login, register, reset password
+│   │   ├── auth.ts                            # Zod schemas: login, register, reset password
+│   │   └── profile.ts                         # Zod schemas: profileSchema, changePasswordSchema
 │   ├── types/
 │   │   └── next-auth.d.ts                     # Augmentasi tipe NextAuth (id, role)
 │   └── middleware.ts                           # Proteksi route via NextAuth
@@ -296,7 +308,8 @@ Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
 
 | Route | Akses |
 |-------|-------|
-| `/dashboard/*` | Login + role bukan USER |
+| `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | Semua role yang sudah login |
+| `/dashboard/*` lainnya | Login + role bukan USER (JOURNALIST/EDITOR/ADMIN) |
 | `/login`, `/register`, `/forgot-password`, `/reset-password/*` | Redirect ke `/` jika sudah login |
 | Semua route lain | Publik |
 
@@ -319,7 +332,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 |-------|-------|--------|
 | Phase 1 | Project Setup & Foundation | Selesai |
 | Phase 2 | Public News Website | Selesai |
-| Phase 3 | Authentication & User Features | Sebagian (Profile & Change Password belum) |
+| Phase 3 | Authentication & User Features | Selesai |
 | Phase 4 | CMS Dashboard | Belum dimulai |
 | Phase 5 | Editorial Workflow | Belum dimulai |
 | Phase 6 | Analytics Dashboard | Belum dimulai |

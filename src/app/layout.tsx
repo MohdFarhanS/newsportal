@@ -3,6 +3,7 @@ import { Newsreader, Roboto } from "next/font/google"
 import "./globals.css"
 import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
+import { Toaster } from "sonner"
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Footer />
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   )
