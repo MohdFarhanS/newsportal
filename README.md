@@ -13,14 +13,14 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 | Database | PostgreSQL + Prisma 7 (PG adapter) |
 | Auth | NextAuth v5 (beta) — Credentials provider, JWT |
 | UI | Shadcn/ui, Radix UI, Tailwind CSS v4 |
-| Rich Text | TipTap 3 (Phase 4) |
+| Rich Text | TipTap 3 |
 | Images | Cloudinary via Next Cloudinary |
 | Email | Resend |
 | Rate Limiting | Upstash Redis |
 | Validasi | Zod v4 + React Hook Form |
 | Data Fetching | TanStack Query v5 |
-| Analytics | Vercel Analytics (Phase 8) |
-| Sanitasi HTML | Isomorphic DOMPurify |
+| Analytics | Vercel Analytics |
+| Sanitasi HTML | sanitize-html (save-time + display-time, allowlist-based) |
 
 ---
 
@@ -38,27 +38,42 @@ Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menamp
 ### Autentikasi & Otorisasi
 - Login / Register dengan email & password
 - Forgot password dengan token berbatas waktu 1 jam (email via Resend)
-- Reset password dengan invalidasi token setelah dipakai
+- Reset password dengan invalidasi token setelah dipakai — token disimpan sebagai SHA-256 hash di DB
 - Proteksi route berbasis peran: `USER`, `JOURNALIST`, `EDITOR`, `ADMIN`
 - Re-validasi JWT ke DB setiap request (cek `isActive` + `passwordChangedAt`)
+- Rate limiting pada login, register, forgot password, reset password, dan search (Upstash)
+- Security headers global: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security: max-age=31536000`, `Content-Security-Policy` (strict di production, +`unsafe-eval` di dev untuk Turbopack)
+- URL fields (avatar, social links, cover image) divalidasi wajib HTTPS
 
 ### Dashboard Pengguna
 - Edit profil: nama, bio, link sosial media
 - Upload avatar (PNG / JPEG / WebP, maks 5 MB, force square crop via Cloudinary)
 - Ganti password
 
-### Manajemen Konten *(Phase 4+)*
+### Manajemen Konten *(CMS Dashboard)*
 - Status artikel: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
 - Artikel featured / non-featured (max 3, curation manual)
 - Kategori dan tag
 - Upload gambar ke Cloudinary
 - Editor rich text TipTap (link, image)
 
+### SEO
+- `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`, `/admin/`
+- `sitemap.xml` dinamis — semua published articles + categories + static pages
+- **Open Graph + Twitter Card** di semua halaman: homepage, artikel, listing (`/latest`, `/category/[slug]`, `/author/[username]`), search (noindex)
+- **JSON-LD structured data**: `NewsArticle` + `BreadcrumbList` di artikel, `BreadcrumbList` di category pages, `Organization` + `WebSite` + `SearchAction` di root layout
+- Custom 404 (`not-found.tsx`) — editorial style dengan internal links
+- `public/llms.txt` — AI search readiness sesuai [llmstxt.org](https://llmstxt.org) spec
+
 ### Performa & Infrastruktur
 - Build dengan **Turbopack** (dev & production)
 - Connection pooling Prisma PG adapter
 - Rate limiting dengan Upstash (graceful skip jika env tidak ada)
-- Optimasi gambar dengan `next/image`
+- Optimasi gambar dengan `next/image` + Cloudinary auto-format/quality (`f_auto,q_auto`)
+- **Suspense streaming** di homepage — Featured, Latest, Trending load secara independen
+- **`React.cache()`** pada `getCategoryBySlug`, `getAuthorById`, `getArticleBySlug` untuk dedup DB call antara `generateMetadata` dan page component
+- `loading.tsx` (skeleton) dan `error.tsx` (error boundary) di root app
+- **Database indexes**: semua FK yang sering di-query punya index eksplisit (`authorId`, `tagId`, `articleId`), index komposit untuk query CMS dan author page, dedikasi index untuk dedup view tracking; `pg_trgm` extension + GIN trigram indexes pada `articles.title` + `articles.excerpt` untuk efisiensi `searchArticles` ILIKE
 
 ---
 
@@ -71,6 +86,7 @@ newsportal/
 │   ├── schema.prisma        # Definisi skema database
 │   └── seed.ts              # Script seeding data contoh
 ├── public/
+│   ├── llms.txt                      # AI search readiness (llmstxt.org format)
 │   ├── placeholder-article.jpg       # Fallback gambar artikel (ArticleCard)
 │   ├── placeholder-tech.svg          # Placeholder seed: Teknologi
 │   ├── placeholder-biz.svg           # Placeholder seed: Bisnis
@@ -80,6 +96,7 @@ newsportal/
 │   └── placeholder-pol.svg           # Placeholder seed: Politik
 ├── src/
 │   ├── actions/
+│   │   ├── article.ts       # Server Actions (createArticleAction, updateArticleAction, saveDraftAction, submitForReviewAction)
 │   │   ├── auth.ts          # Server Actions (logout, changePasswordAction)
 │   │   └── profile.ts       # Server Actions (updateProfileAction)
 │   ├── app/
@@ -112,14 +129,29 @@ newsportal/
 │   │   │   ├── layout.tsx                    # Sidebar + auth guard
 │   │   │   ├── page.tsx                      # Overview
 │   │   │   ├── profile/page.tsx              # FR-UM-01
-│   │   │   └── security/page.tsx             # FR-UM-02
+│   │   │   ├── security/page.tsx             # FR-UM-02
+│   │   │   └── articles/
+│   │   │       ├── page.tsx                  # Daftar artikel milik user
+│   │   │       ├── new/page.tsx              # Tulis artikel baru (FR-AM-01)
+│   │   │       └── [id]/edit/page.tsx        # Edit artikel (FR-AM-10)
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
 │   │   ├── contact/page.tsx
+│   │   ├── not-found.tsx                      # Custom 404 page (editorial style)
+│   │   ├── loading.tsx                        # Root loading skeleton (Suspense fallback)
+│   │   ├── error.tsx                          # Root error boundary (client component)
+│   │   ├── robots.ts                          # robots.txt dinamis
+│   │   ├── sitemap.ts                         # sitemap.xml dinamis (articles + categories + static)
 │   │   ├── globals.css
-│   │   ├── layout.tsx                         # Root layout (Navbar, font, metadata)
-│   │   └── page.tsx                           # Homepage
+│   │   ├── layout.tsx                         # Root layout (Navbar, font, metadata, JSON-LD)
+│   │   └── page.tsx                           # Homepage (Suspense streaming)
 │   ├── components/
+│   │   ├── dashboard/
+│   │   │   ├── ArticleForm.tsx               # Form create/edit artikel (shared, dengan autosave)
+│   │   │   ├── ChangePasswordForm.tsx        # Change password form
+│   │   │   ├── DashboardNav.tsx              # Sidebar nav role-aware (USER/JOURNALIST/EDITOR/ADMIN)
+│   │   │   ├── ProfileForm.tsx               # Avatar + profile fields
+│   │   │   └── TiptapEditor.tsx              # Rich text editor wrapper (TipTap 3)
 │   │   ├── layout/
 │   │   │   ├── Footer.tsx
 │   │   │   ├── LogoutButton.tsx
@@ -138,16 +170,11 @@ newsportal/
 │   │   │   ├── SearchClient.tsx               # Client: useQuery + debounce + URL sync
 │   │   │   └── SearchResults.tsx              # Hasil + skeleton loading
 │   │   └── ui/
-│   │   ├── dashboard/
-│   │   │   ├── DashboardNav.tsx              # Sidebar nav role-aware (USER/JOURNALIST/EDITOR/ADMIN)
-│   │   │   ├── ProfileForm.tsx               # Avatar + profile fields (Client Component)
-│   │   │   └── ChangePasswordForm.tsx        # Change password form (Client Component)
-│   │   └── ui/
 │   │       ├── button.tsx
 │   │       ├── dialog.tsx
 │   │       ├── input.tsx
 │   │       ├── sheet.tsx
-│   │       └── upload-widget.tsx  # Themed wrapper CldUploadWidget
+│   │       └── upload-widget.tsx              # Themed wrapper CldUploadWidget
 │   ├── generated/
 │   │   └── prisma/                            # Prisma client (auto-generated)
 │   ├── lib/
@@ -155,24 +182,27 @@ newsportal/
 │   │   │   └── view.ts                        # Server Action: pelacakan view artikel
 │   │   ├── hooks/
 │   │   │   └── use-debounce.ts                # Custom hook debounce
-│   │   ├── articles.ts                        # Query artikel (featured, latest, trending, search)
+│   │   ├── articles.ts                        # Query artikel (featured, latest, trending, search, related)
 │   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
+│   │   ├── cms-articles.ts                    # Query CMS: getUserArticles, getArticleForEdit
 │   │   ├── auth.ts                            # NextAuth setup + re-validasi JWT ke DB
 │   │   ├── authors.ts                         # Query penulis
 │   │   ├── categories.ts                      # Query kategori
 │   │   ├── db.ts                              # Prisma client singleton
 │   │   ├── email.ts                           # Kirim email via Resend
-│   │   ├── rate-limit.ts                      # Rate limiter Upstash (nullable)
+│   │   ├── rate-limit.ts                      # Rate limiter Upstash: getRateLimiter (5/15m), getSearchRateLimiter (30/1m)
+│   │   ├── sanitize.ts                        # Shared sanitize-html options (allowlist: defaults + img)
 │   │   ├── tags.ts                            # Query tag
 │   │   └── utils.ts                           # Helper cn() untuk Tailwind
 │   ├── schemas/
+│   │   ├── article.ts                         # Zod schemas: articleSchema, saveDraftSchema
 │   │   ├── auth.ts                            # Zod schemas: login, register, reset password
 │   │   └── profile.ts                         # Zod schemas: profileSchema, changePasswordSchema
 │   ├── types/
 │   │   └── next-auth.d.ts                     # Augmentasi tipe NextAuth (id, role)
 │   └── middleware.ts                           # Proteksi route via NextAuth
 ├── components.json          # Konfigurasi Shadcn/ui
-├── next.config.ts           # Konfigurasi Next.js (Cloudinary remote pattern)
+├── next.config.ts           # Konfigurasi Next.js (Cloudinary remote pattern, security headers)
 ├── prisma.config.ts         # Konfigurasi Prisma
 └── tsconfig.json            # Konfigurasi TypeScript
 ```
@@ -250,15 +280,18 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
 # Email (Resend)
 RESEND_API_KEY="re_your-api-key"
 
-# App URL
+# App URL — gunakan production URL saat deploy (https://yourdomain.com)
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Email sender (harus domain yang diverifikasi di Resend)
+EMAIL_FROM="no-reply@mail.yourdomain.com"
 ```
 
 ### 3. Setup Database
 
 ```bash
 # Jalankan migrasi
-npx prisma migrate deploy
+npm run migrate
 
 # (Opsional) Seed data contoh
 npm run db:seed
@@ -294,6 +327,7 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `build` | `next build --turbopack` | Production build |
 | `start` | `next start` | Jalankan production server |
 | `lint` | `eslint` | Linting kode |
+| `migrate` | `prisma migrate deploy` | Apply semua pending migration ke database |
 | `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh ke database |
 | `db:seed-test` | `npx tsx prisma/seed-test-accounts.ts` | Buat akun test untuk semua role (dev only) |
 
@@ -315,14 +349,13 @@ Buka [http://localhost:3000](http://localhost:3000)
 | Fungsi | Keterangan |
 |--------|------------|
 | `getFeaturedArticles()` | 3 artikel published + isFeatured=true, urut publishedAt DESC |
-| `getLatestArticles(page, perPage)` | Paginasi artikel published non-featured, default 6/halaman |
-| `getAllPublishedArticles(page, perPage)` | Semua artikel published (termasuk featured), default 12/halaman |
+| `getLatestArticles(page, perPage, includeFeatured?)` | Paginasi artikel published. `includeFeatured=false` (default) untuk homepage sidebar; `=true` untuk `/latest` |
 | `getTrendingArticles()` | Top 5 artikel by views dalam 7 hari terakhir |
 | `getArticleBySlug(slug)` | Detail artikel tunggal + tags (memoized dengan React `cache`) |
 | `getRelatedArticles(categoryId, excludeSlug)` | 3 artikel terkait dalam kategori sama |
 | `getArticlesByCategory(slug, page, perPage)` | Artikel per kategori, default 12/halaman |
 | `getArticlesByAuthor(authorId, page, perPage)` | Artikel per penulis, default 12/halaman |
-| `searchArticles(params)` | Full-text search + filter kategori / tag / tanggal |
+| `searchArticles(params)` | ILIKE search (didukung pg_trgm GIN index) + filter kategori / tag / tanggal |
 
 ---
 
@@ -342,13 +375,15 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 > Auth split-config pattern: `auth.config.ts` dipakai di middleware (edge runtime, tanpa DB query). `auth.ts` dipakai di server context dengan re-validasi JWT ke DB setiap request.
 >
 > **Penting:** Guard untuk auth pages (`/login`, `/register`) **tidak** ada di middleware karena middleware tidak bisa query DB — stale JWT cookie bisa menyebabkan false positive. Guard diimplementasi di page-level menggunakan `auth()` dari `auth.ts` yang DB-validated.
+>
+> **USER route matching** menggunakan **exact match** (bukan `startsWith`) agar `/dashboard/profile-evil` tidak lolos whitelist karena ada `/dashboard/profile` di daftar yang diizinkan.
 
 ---
 
 ## Fonts
 
-- **Heading:** Newsreader (Google Fonts, serif)
-- **Body:** Roboto (Google Fonts, sans-serif)
+- **Heading:** Newsreader (Google Fonts, serif) — weight `600` dan `700` saja (normal); variant lain tidak di-preload untuk hemat bandwidth
+- **Body:** Roboto (Google Fonts, sans-serif) — weight `400`, `500`, `700`
 
 ---
 
@@ -359,8 +394,8 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 1 | Project Setup & Foundation | Selesai |
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
-| Phase 4 | CMS Dashboard | Sedang dikerjakan (Layout ✓, Article List/Create/Edit/Submit ✓) |
+| Phase 4 | CMS Dashboard | Selesai |
 | Phase 5 | Editorial Workflow | Belum dimulai |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
-| Phase 7 | SEO Optimization | Belum dimulai |
-| Phase 8 | Production Ready | Belum dimulai |
+| Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
+| Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration) |

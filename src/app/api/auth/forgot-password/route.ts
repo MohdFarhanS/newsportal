@@ -10,7 +10,10 @@ const OK = { message: "Jika email terdaftar, link reset password telah dikirim."
 export async function POST(req: NextRequest) {
   const rl = getRateLimiter()
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1"
+    const ip =
+      req.headers.get("x-real-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown"
     const { success } = await rl.limit(`forgot-password:${ip}`)
     if (!success) {
       return NextResponse.json(
@@ -40,14 +43,20 @@ export async function POST(req: NextRequest) {
     where: { userId: user.id, usedAt: null },
   })
 
-  const token = crypto.randomBytes(32).toString("hex")
+  const rawToken = crypto.randomBytes(32).toString("hex")
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex")
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
   await db.passwordResetToken.create({
-    data: { userId: user.id, token, expiresAt },
+    data: { userId: user.id, token: tokenHash, expiresAt },
   })
 
-  await sendPasswordResetEmail(email, token)
+  try {
+    await sendPasswordResetEmail(email, rawToken)
+  } catch (err) {
+    console.error("[forgot-password] Failed to send email:", err)
+    // Return OK anyway — prevents enumeration; token is valid if user retries
+  }
 
   return NextResponse.json(OK)
 }

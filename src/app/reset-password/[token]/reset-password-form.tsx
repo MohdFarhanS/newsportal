@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { z } from "zod"
 import { newPasswordSchema } from "@/schemas/auth"
@@ -24,7 +23,6 @@ const inputClass =
   "border-0 border-b border-zinc-300 rounded-none px-0 py-2.5 h-auto shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-zinc-900 bg-transparent placeholder:text-zinc-300 text-sm"
 
 export default function ResetPasswordForm({ token }: { token: string }) {
-  const router = useRouter()
   const [tokenError, setTokenError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
   const {
