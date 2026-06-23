@@ -1,6 +1,7 @@
+import { cache } from "react"
 import { db } from "@/lib/db"
 
-export async function getAuthorById(id: string) {
+export const getAuthorById = cache(async (id: string) => {
   return db.user.findUnique({
     where: { id },
     select: {
@@ -16,4 +17,4 @@ export async function getAuthorById(id: string) {
       },
     },
   })
-}
+})

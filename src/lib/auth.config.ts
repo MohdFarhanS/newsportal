@@ -36,8 +36,8 @@ export const authConfig = {
       if (isDashboardRoute && !isLoggedIn) return false
 
       if (isDashboardRoute && role === "USER") {
-        const isAllowed = USER_ALLOWED_DASHBOARD_ROUTES.some((r) =>
-          nextUrl.pathname.startsWith(r)
+        const isAllowed = USER_ALLOWED_DASHBOARD_ROUTES.some(
+          (r) => nextUrl.pathname === r
         )
         if (!isAllowed) return Response.redirect(new URL("/", nextUrl))
       }

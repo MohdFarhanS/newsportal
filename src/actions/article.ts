@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import slugify from "slugify"
-import DOMPurify from "isomorphic-dompurify"
+import sanitizeHtml from "sanitize-html"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { SANITIZE_OPTIONS } from "@/lib/sanitize"
 import {
   articleSchema,
   saveDraftSchema,
@@ -24,17 +25,19 @@ async function requireContentRole() {
 
 async function generateUniqueSlug(title: string, excludeId?: string): Promise<string> {
   const base = slugify(title, { lower: true, strict: true })
-  const where = excludeId ? { slug: base, id: { not: excludeId } } : { slug: base }
-  const existing = await db.article.findFirst({ where, select: { id: true } })
-  if (!existing) return base
-
+  const taken = await db.article.findMany({
+    where: {
+      slug: { startsWith: base },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { slug: true },
+  })
+  if (!taken.length) return base
+  const slugSet = new Set(taken.map((a) => a.slug))
+  if (!slugSet.has(base)) return base
   for (let i = 1; ; i++) {
     const candidate = `${base}-${i}`
-    const whereN = excludeId
-      ? { slug: candidate, id: { not: excludeId } }
-      : { slug: candidate }
-    const conflict = await db.article.findFirst({ where: whereN, select: { id: true } })
-    if (!conflict) return candidate
+    if (!slugSet.has(candidate)) return candidate
   }
 }
 
@@ -50,7 +53,7 @@ export async function createArticleAction(
 
   const { title, categoryId, tags: tagIds, excerpt, content, coverImageUrl } = parsed.data
   const slug = await generateUniqueSlug(title)
-  const sanitizedContent = DOMPurify.sanitize(content)
+  const sanitizedContent = sanitizeHtml(content, SANITIZE_OPTIONS)
 
   const article = await db.article.create({
     data: {
@@ -92,7 +95,7 @@ export async function updateArticleAction(
 
   const { title, categoryId, tags: tagIds, excerpt, content, coverImageUrl } = parsed.data
   const slug = await generateUniqueSlug(title, id)
-  const sanitizedContent = DOMPurify.sanitize(content)
+  const sanitizedContent = sanitizeHtml(content, SANITIZE_OPTIONS)
 
   await db.articleTag.deleteMany({ where: { articleId: id } })
   await db.article.update({
@@ -123,7 +126,7 @@ export async function saveDraftAction(
 
   const existing = await db.article.findFirst({
     where: { id, authorId: session.user.id, status: "DRAFT" },
-    select: { id: true },
+    select: { id: true, tags: { select: { tagId: true } } },
   })
   if (!existing) return {}
 
@@ -139,22 +142,26 @@ export async function saveDraftAction(
   }
   if (categoryId !== undefined) updateData.categoryId = categoryId
   if (excerpt !== undefined) updateData.excerpt = excerpt
-  if (content !== undefined) updateData.content = DOMPurify.sanitize(content)
+  if (content !== undefined) updateData.content = sanitizeHtml(content, SANITIZE_OPTIONS)
   if (coverImageUrl !== undefined) updateData.coverImageUrl = coverImageUrl || null
 
   if (tagIds !== undefined) {
-    await db.articleTag.deleteMany({ where: { articleId: id } })
-    await db.article.update({
-      where: { id },
-      data: {
-        ...updateData,
-        tags: { create: tagIds.map((tagId) => ({ tagId })) },
-      },
-    })
+    const existingTagIds = existing.tags.map((t) => t.tagId).sort().join(",")
+    const newTagIds = [...tagIds].sort().join(",")
+    if (existingTagIds !== newTagIds) {
+      await db.articleTag.deleteMany({ where: { articleId: id } })
+      await db.article.update({
+        where: { id },
+        data: { ...updateData, tags: { create: tagIds.map((tagId) => ({ tagId })) } },
+      })
+    } else if (Object.keys(updateData).length > 0) {
+      await db.article.update({ where: { id }, data: updateData })
+    }
   } else if (Object.keys(updateData).length > 0) {
     await db.article.update({ where: { id }, data: updateData })
   }
 
+  revalidatePath("/dashboard/articles")
   return {}
 }
 

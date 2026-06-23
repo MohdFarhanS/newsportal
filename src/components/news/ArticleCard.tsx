@@ -6,6 +6,13 @@ import type { ArticleWithRelations, TrendingArticle } from "@/lib/articles"
 
 const PLACEHOLDER = "/placeholder-article.jpg"
 
+function cloudinarySrc(url: string | null | undefined): string {
+  if (!url) return PLACEHOLDER
+  // ponytail: insert f_auto,q_auto so Cloudinary serves optimal format+quality before next/image proxies it
+  if (url.includes("res.cloudinary.com")) return url.replace("/upload/", "/upload/f_auto,q_auto/")
+  return url
+}
+
 function timeAgo(date: Date | null) {
   if (!date) return ""
   return formatDistanceToNow(date, { addSuffix: true, locale: idLocale })
@@ -23,7 +30,7 @@ export function HeroCard({ article }: HeroCardProps) {
     >
       <div className="relative aspect-video w-full overflow-hidden rounded mb-3">
         <Image
-          src={article.coverImageUrl ?? PLACEHOLDER}
+          src={cloudinarySrc(article.coverImageUrl)}
           alt={article.title}
           fill
           className="object-cover"
@@ -61,7 +68,7 @@ export function HorizontalCard({ article }: HorizontalCardProps) {
     >
       <div className="relative w-24 h-20 flex-shrink-0 overflow-hidden rounded">
         <Image
-          src={article.coverImageUrl ?? PLACEHOLDER}
+          src={cloudinarySrc(article.coverImageUrl)}
           alt={article.title}
           fill
           className="object-cover"
@@ -95,7 +102,7 @@ export function SecondaryCard({ article }: SecondaryCardProps) {
     >
       <div className="relative aspect-video w-full overflow-hidden rounded mb-2">
         <Image
-          src={article.coverImageUrl ?? PLACEHOLDER}
+          src={cloudinarySrc(article.coverImageUrl)}
           alt={article.title}
           fill
           className="object-cover"

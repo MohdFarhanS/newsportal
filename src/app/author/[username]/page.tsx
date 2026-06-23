@@ -26,10 +26,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { username } = await params
   const author = await getAuthorById(username)
   if (!author) return {}
+  const description = author.profile?.bio ?? `Baca artikel-artikel dari ${author.name} di NewsPortal.`
   return {
     title: `Artikel oleh ${author.name}`,
-    description: author.profile?.bio ?? `Baca artikel-artikel dari ${author.name} di NewsPortal.`,
+    description,
     alternates: { canonical: `/author/${username}` },
+    openGraph: {
+      title: `Artikel oleh ${author.name} | NewsPortal`,
+      description,
+      type: "profile",
+      url: `/author/${username}`,
+      ...(author.profile?.avatarUrl && {
+        images: [{ url: author.profile.avatarUrl, alt: author.name }],
+      }),
+    },
+    twitter: {
+      card: "summary",
+      title: `Artikel oleh ${author.name} | NewsPortal`,
+      description,
+    },
   }
 }
 

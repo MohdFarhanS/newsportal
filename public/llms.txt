@@ -1,0 +1,31 @@
+# NewsPortal
+
+> Portal berita digital berbahasa Indonesia yang menyajikan berita terkini, akurat, dan terpercaya.
+
+NewsPortal menerbitkan konten lintas kategori yang ditulis oleh jurnalis terverifikasi dan melalui proses editorial sebelum dipublikasikan.
+
+## Halaman Utama
+
+- [Beranda](/): Ringkasan berita utama, terbaru, dan trending
+- [Berita Terbaru](/latest): Semua artikel terbaru dari seluruh kategori
+- [Pencarian](/search): Cari artikel berdasarkan kata kunci, kategori, tag, atau tanggal
+- [Tentang Kami](/about): Informasi redaksi dan misi NewsPortal
+- [Kontak](/contact): Formulir dan informasi kontak redaksi
+
+## Kategori
+
+- [Teknologi](/category/teknologi): Berita teknologi, AI, dan inovasi digital
+- [Bisnis](/category/bisnis): Berita ekonomi, pasar, dan korporasi
+- [Olahraga](/category/olahraga): Berita olahraga nasional dan internasional
+- [Hiburan](/category/hiburan): Berita film, musik, dan budaya pop
+- [Kesehatan](/category/kesehatan): Berita kesehatan, medis, dan gaya hidup
+- [Politik](/category/politik): Berita politik, pemerintahan, dan kebijakan
+
+## Akses Mesin
+
+- [Sitemap XML](/sitemap.xml): Daftar lengkap semua URL yang diindeks
+- [Robots](/robots.txt): Kebijakan crawling untuk bot
+
+## Catatan untuk AI
+
+Semua artikel tersedia di `/article/{slug}`. Tidak ada paywall. Konten dirender server-side (SSR) — tidak memerlukan JavaScript untuk diakses. Bahasa: Indonesia (id-ID).

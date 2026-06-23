@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { newPasswordSchema } from "@/schemas/auth"
+import { getRateLimiter } from "@/lib/rate-limit"
 
 const schema = z.object({
   token: z.string().min(1),
@@ -14,6 +16,21 @@ const INVALID_TOKEN = {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = getRateLimiter()
+  if (rl) {
+    const ip =
+      req.headers.get("x-real-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown"
+    const { success } = await rl.limit(`reset-password:${ip}`)
+    if (!success) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMIT", message: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." } },
+        { status: 429 }
+      )
+    }
+  }
+
   const body = await req.json().catch(() => null)
   const parsed = schema.safeParse(body)
   if (!parsed.success) {
@@ -23,10 +40,11 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { token, newPassword } = parsed.data
+  const { token: rawToken, newPassword } = parsed.data
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex")
 
   const resetToken = await db.passwordResetToken.findUnique({
-    where: { token },
+    where: { token: tokenHash },
     include: { user: { select: { id: true } } },
   })
 

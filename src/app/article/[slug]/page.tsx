@@ -4,8 +4,9 @@ import Link from "next/link"
 import type { Metadata } from "next"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
-import DOMPurify from "isomorphic-dompurify"
 import { getArticleBySlug, getRelatedArticles } from "@/lib/articles"
+import { SANITIZE_OPTIONS } from "@/lib/sanitize"
+import sanitizeHtml from "sanitize-html"
 import { HorizontalCard } from "@/components/news/ArticleCard"
 import { ViewTracker } from "./ViewTracker"
 
@@ -54,8 +55,9 @@ export default async function ArticlePage({ params }: Props) {
   if (!article) notFound()
 
   const related = await getRelatedArticles(article.categoryId, slug)
-  const safeContent = DOMPurify.sanitize(article.content)
   const minutes = readingTime(article.content)
+
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -68,11 +70,25 @@ export default async function ArticlePage({ params }: Props) {
     ...(article.coverImageUrl && { image: [article.coverImageUrl] }),
   }
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Beranda", item: base },
+      { "@type": "ListItem", position: 2, name: article.category.name, item: `${base}/category/${article.category.slug}` },
+      { "@type": "ListItem", position: 3, name: article.title, item: `${base}/article/${slug}` },
+    ],
+  }
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }}
       />
       <ViewTracker articleId={article.id} />
 
@@ -144,7 +160,7 @@ export default async function ArticlePage({ params }: Props) {
         {/* Article Content */}
         <div
           className="article-content"
-          dangerouslySetInnerHTML={{ __html: safeContent }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content, SANITIZE_OPTIONS) }}
         />
 
         {/* Tags */}

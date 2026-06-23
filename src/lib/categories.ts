@@ -1,4 +1,5 @@
-﻿import { db } from "@/lib/db"
+﻿import { cache } from "react"
+import { db } from "@/lib/db"
 
 export async function getNavCategories() {
   return db.category.findMany({
@@ -8,12 +9,12 @@ export async function getNavCategories() {
   })
 }
 
-export async function getCategoryBySlug(slug: string) {
+export const getCategoryBySlug = cache(async (slug: string) => {
   return db.category.findUnique({
     where: { slug },
     select: { id: true, name: true, slug: true, description: true },
   })
-}
+})
 
 
 export async function getAllCategories() {

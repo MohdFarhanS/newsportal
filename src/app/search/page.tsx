@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Cari Artikel",
   description: "Temukan artikel yang relevan menggunakan pencarian dan filter.",
   alternates: { canonical: "/search" },
+  robots: { index: false, follow: true },
 }
 
 export default async function SearchPage() {

@@ -7,7 +7,10 @@ import { getRateLimiter } from "@/lib/rate-limit"
 export async function POST(req: NextRequest) {
   const rl = getRateLimiter()
   if (rl) {
-    const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1"
+    const ip =
+      req.headers.get("x-real-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown"
     const { success } = await rl.limit(`register:${ip}`)
     if (!success) {
       return NextResponse.json(

@@ -59,14 +59,14 @@ export default function SearchClient({ initialCategories, initialTags }: SearchC
     else next.delete("q")
     next.delete("page")
     router.push(`${pathname}?${next.toString()}`, { scroll: false })
-  }, [debouncedQuery]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, urlQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
     if (value) params.set(key, value)
     else params.delete(key)
     params.delete("page")
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   function buildPageHref(page: number): string {

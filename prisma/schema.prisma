@@ -109,6 +109,8 @@ model Article {
   @@index([status, publishedAt])
   @@index([isFeatured, publishedAt])
   @@index([categoryId])
+  @@index([authorId, updatedAt])
+  @@index([authorId, status, publishedAt])
   @@map("articles")
 }
 
@@ -120,6 +122,7 @@ model ArticleTag {
   tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([articleId, tagId])
+  @@index([tagId])
   @@map("article_tags")
 }
 
@@ -133,6 +136,7 @@ model Bookmark {
   article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, articleId])
+  @@index([articleId])
   @@map("bookmarks")
 }
 
@@ -147,6 +151,7 @@ model ReadingHistory {
 
   @@unique([userId, articleId])
   @@index([userId, readAt])
+  @@index([articleId])
   @@map("reading_history")
 }
 
@@ -159,6 +164,7 @@ model ArticleView {
   article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([articleId, viewedAt])
+  @@index([articleId, viewerHash, viewedAt])
   @@map("article_views")
 }
 
@@ -172,6 +178,7 @@ model PasswordResetToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
   @@map("password_reset_tokens")
 }

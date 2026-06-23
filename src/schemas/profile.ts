@@ -4,9 +4,9 @@ import { passwordSchema } from "@/schemas/auth"
 export const profileSchema = z.object({
   name: z.string().trim().min(2, "Nama minimal 2 karakter"),
   bio: z.string().max(280, "Bio maks. 280 karakter").optional().or(z.literal("")),
-  avatarUrl: z.string().url("URL tidak valid").optional().or(z.literal("")),
-  socialTwitter: z.string().url("URL tidak valid").optional().or(z.literal("")),
-  socialLinkedin: z.string().url("URL tidak valid").optional().or(z.literal("")),
+  avatarUrl: z.string().url("URL tidak valid").refine((u) => u.startsWith("https://"), "URL harus HTTPS").optional().or(z.literal("")),
+  socialTwitter: z.string().url("URL tidak valid").refine((u) => u.startsWith("https://"), "URL harus HTTPS").optional().or(z.literal("")),
+  socialLinkedin: z.string().url("URL tidak valid").refine((u) => u.startsWith("https://"), "URL harus HTTPS").optional().or(z.literal("")),
 })
 
 export const changePasswordSchema = z

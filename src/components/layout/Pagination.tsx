@@ -73,7 +73,7 @@ function PaginationLink({
 
   if (disabled || !href) {
     return (
-      <span aria-disabled="true" className={`${cls} text-[#6B7280] cursor-not-allowed`} aria-label={ariaLabel}>
+      <span role="button" aria-disabled="true" className={`${cls} text-[#6B7280] cursor-not-allowed`} aria-label={ariaLabel}>
         {children}
       </span>
     )

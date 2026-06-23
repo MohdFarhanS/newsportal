@@ -4,12 +4,23 @@ import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 import { loginSchema } from "@/schemas/auth"
 import authConfig from "@/lib/auth.config"
+import { getRateLimiter } from "@/lib/rate-limit"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        const rl = getRateLimiter()
+        if (rl) {
+          const ip =
+            request.headers.get("x-real-ip") ??
+            request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+            "unknown"
+          const { success } = await rl.limit(`login:${ip}`)
+          if (!success) return null
+        }
+
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 

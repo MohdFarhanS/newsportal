@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { subDays } from "date-fns"
 
 const articleInclude = {
-  author: { include: { profile: true } },
+  author: { select: { id: true, name: true } },
   category: true,
 } as const
 
@@ -16,34 +16,18 @@ export async function getFeaturedArticles() {
   })
 }
 
-export async function getLatestArticles(page: number, perPage = 6) {
-  const [articles, total] = await Promise.all([
-    db.article.findMany({
-      where: { status: "PUBLISHED", isFeatured: false },
-      orderBy: { publishedAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: articleInclude,
-    }),
-    db.article.count({ where: { status: "PUBLISHED", isFeatured: false } }),
-  ])
-
-  return {
-    articles,
-    total,
-    totalPages: Math.ceil(total / perPage),
+export async function getLatestArticles(page: number, perPage = 6, includeFeatured = false) {
+  const where = {
+    status: "PUBLISHED" as const,
+    ...(includeFeatured ? {} : { isFeatured: false }),
   }
-}
-
-export async function getAllPublishedArticles(page: number = 1, perPage: number = 12) {
-  const where = { status: "PUBLISHED" as const }
   const [articles, total] = await Promise.all([
     db.article.findMany({
       where,
-      include: articleInclude,
       orderBy: { publishedAt: "desc" },
       skip: (page - 1) * perPage,
       take: perPage,
+      include: articleInclude,
     }),
     db.article.count({ where }),
   ])
@@ -67,7 +51,7 @@ export async function getTrendingArticles() {
 
   const articles = await db.article.findMany({
     where: { id: { in: articleIds }, status: "PUBLISHED" },
-    include: articleInclude,
+    select: { id: true, slug: true, title: true },
   })
 
   return viewCounts
