@@ -28,6 +28,9 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} NewsPortal
           </p>
         </div>
+        <p className="text-xs text-[#9CA3AF] text-center mt-4">
+          Portfolio project — all content is fictional.
+        </p>
       </div>
     </footer>
   )

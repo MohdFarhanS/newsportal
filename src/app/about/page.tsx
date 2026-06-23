@@ -11,6 +11,14 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Portfolio notice */}
+      <div className="mb-8 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-4 py-3 text-sm text-[#6B7280]">
+        <strong className="text-[#09090B]">Catatan:</strong>{" "}
+        Ini adalah portfolio project untuk mendemonstrasikan kemampuan fullstack
+        development. Semua artikel, jurnalis, dan konten lainnya bersifat fiktif
+        dan dibuat untuk keperluan demonstrasi semata.
+      </div>
+
       {/* Hero */}
       <div className="mb-10 pb-8 border-b border-[#E4E4E7]">
         <h1 className="font-heading text-3xl font-bold text-[#09090B] mb-4">

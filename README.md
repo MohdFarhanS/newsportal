@@ -1,6 +1,8 @@
 ﻿# NewsPortal
 
-Portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menampilkan artikel terkurasi, sistem manajemen konten berbasis peran, dan pelacakan artikel trending secara real-time.
+Portfolio project — portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menampilkan artikel terkurasi, sistem manajemen konten berbasis peran, dan pelacakan artikel trending secara real-time.
+
+> **Catatan:** Semua artikel, jurnalis, dan konten lainnya bersifat fiktif dan dibuat untuk keperluan demonstrasi kemampuan fullstack development.
 
 ---
 
@@ -393,4 +395,4 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 5 | Editorial Workflow | Belum dimulai |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
-| Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration) |
+| Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |
