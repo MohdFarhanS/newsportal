@@ -52,13 +52,13 @@ async function main() {
 
   const featured1 = await prisma.article.upsert({
     where: { slug: 'revolusi-ai-mengubah-industri-media-2026' },
-    update: {},
+    update: { coverImageUrl: 'https://picsum.photos/id/60/800/450' },
     create: {
       title: 'Revolusi AI Mengubah Industri Media di 2026',
       slug: 'revolusi-ai-mengubah-industri-media-2026',
       excerpt: 'Kecerdasan buatan semakin mengintegrasikan diri ke dalam redaksi berita, membawa perubahan besar pada cara konten diproduksi dan dikonsumsi.',
       content: '<p>Kecerdasan buatan (AI) kini menjadi bagian tak terpisahkan dari ruang redaksi modern.</p>',
-      coverImageUrl: '/placeholder-tech.svg',
+      coverImageUrl: 'https://picsum.photos/id/60/800/450',
       status: ArticleStatus.PUBLISHED,
       isFeatured: true,
       publishedAt: hoursAgo(1),
@@ -69,13 +69,13 @@ async function main() {
 
   const featured2 = await prisma.article.upsert({
     where: { slug: 'startup-fintech-series-b-500-miliar' },
-    update: {},
+    update: { coverImageUrl: 'https://picsum.photos/id/736/800/450' },
     create: {
       title: 'Startup Fintech Indonesia Raih Pendanaan Series B Rp 500 Miliar',
       slug: 'startup-fintech-series-b-500-miliar',
       excerpt: 'Salah satu startup fintech terbesar Indonesia berhasil menutup pendanaan Series B senilai Rp 500 miliar dari investor asing dan domestik.',
       content: '<p>Startup fintech ini berhasil menarik minat investor besar dari Singapura dan Amerika Serikat.</p>',
-      coverImageUrl: '/placeholder-biz.svg',
+      coverImageUrl: 'https://picsum.photos/id/736/800/450',
       status: ArticleStatus.PUBLISHED,
       isFeatured: true,
       publishedAt: hoursAgo(3),
@@ -86,13 +86,13 @@ async function main() {
 
   const featured3 = await prisma.article.upsert({
     where: { slug: 'timnas-indonesia-lolos-final-piala-aff-2026' },
-    update: {},
+    update: { coverImageUrl: 'https://picsum.photos/id/390/800/450' },
     create: {
       title: 'Timnas Indonesia Lolos ke Final Piala AFF 2026',
       slug: 'timnas-indonesia-lolos-final-piala-aff-2026',
       excerpt: 'Skuad Garuda berhasil mengalahkan Thailand 2-1 dan melaju ke babak final Piala AFF untuk pertama kalinya dalam sejarah turnamen.',
       content: '<p>Pertandingan semifinal yang berlangsung di Stadion Gelora Bung Karno berlangsung penuh drama.</p>',
-      coverImageUrl: '/placeholder-sport.svg',
+      coverImageUrl: 'https://picsum.photos/id/390/800/450',
       status: ArticleStatus.PUBLISHED,
       isFeatured: true,
       publishedAt: hoursAgo(5),
@@ -102,20 +102,20 @@ async function main() {
   })
 
   const regularData = [
-    { title: 'Film Adaptasi Novel Terlaris Tayang Perdana di Bioskop', slug: 'film-adaptasi-novel-terlaris-tayang-perdana', categoryId: hiburan.id, coverImage: '/placeholder-ent.svg', hoursAgo: 8 },
-    { title: 'Cara Menjaga Kesehatan Mental di Era Digital', slug: 'cara-menjaga-kesehatan-mental-era-digital', categoryId: kesehatan.id, coverImage: '/placeholder-health.svg', hoursAgo: 12 },
-    { title: 'Pemerintah Luncurkan Program Digitalisasi UMKM Nasional', slug: 'pemerintah-luncurkan-program-digitalisasi-umkm', categoryId: politik.id, coverImage: '/placeholder-pol.svg', hoursAgo: 16 },
-    { title: 'Inovasi Baterai Solid-State Percepat Adopsi Kendaraan Listrik', slug: 'inovasi-baterai-solid-state-kendaraan-listrik', categoryId: teknologi.id, coverImage: '/placeholder-tech.svg', hoursAgo: 20 },
-    { title: 'Indeks Harga Saham Gabungan Tembus 8.000 Poin', slug: 'ihsg-tembus-8000-poin-rekor-baru', categoryId: bisnis.id, coverImage: '/placeholder-biz.svg', hoursAgo: 24 },
-    { title: 'Peneliti Temukan Kandidat Vaksin Dengue Generasi Baru', slug: 'peneliti-temukan-kandidat-vaksin-dengue-baru', categoryId: kesehatan.id, coverImage: '/placeholder-health.svg', hoursAgo: 30 },
-    { title: 'Liga 1 Indonesia: Persija Pimpin Klasemen Setelah Pekan ke-20', slug: 'liga-1-persija-pimpin-klasemen-pekan-20', categoryId: olahraga.id, coverImage: '/placeholder-sport.svg', hoursAgo: 36 },
-    { title: 'Pameran Seni Kontemporer Terbesar Hadir di Jakarta Convention Center', slug: 'pameran-seni-kontemporer-terbesar-jakarta', categoryId: hiburan.id, coverImage: '/placeholder-ent.svg', hoursAgo: 48 },
+    { title: 'Film Adaptasi Novel Terlaris Tayang Perdana di Bioskop', slug: 'film-adaptasi-novel-terlaris-tayang-perdana', categoryId: hiburan.id, coverImage: 'https://picsum.photos/id/670/800/450', hoursAgo: 8 },
+    { title: 'Cara Menjaga Kesehatan Mental di Era Digital', slug: 'cara-menjaga-kesehatan-mental-era-digital', categoryId: kesehatan.id, coverImage: 'https://picsum.photos/id/1043/800/450', hoursAgo: 12 },
+    { title: 'Pemerintah Luncurkan Program Digitalisasi UMKM Nasional', slug: 'pemerintah-luncurkan-program-digitalisasi-umkm', categoryId: politik.id, coverImage: 'https://picsum.photos/id/744/800/450', hoursAgo: 16 },
+    { title: 'Inovasi Baterai Solid-State Percepat Adopsi Kendaraan Listrik', slug: 'inovasi-baterai-solid-state-kendaraan-listrik', categoryId: teknologi.id, coverImage: 'https://picsum.photos/id/1/800/450', hoursAgo: 20 },
+    { title: 'Indeks Harga Saham Gabungan Tembus 8.000 Poin', slug: 'ihsg-tembus-8000-poin-rekor-baru', categoryId: bisnis.id, coverImage: 'https://picsum.photos/id/500/800/450', hoursAgo: 24 },
+    { title: 'Peneliti Temukan Kandidat Vaksin Dengue Generasi Baru', slug: 'peneliti-temukan-kandidat-vaksin-dengue-baru', categoryId: kesehatan.id, coverImage: 'https://picsum.photos/id/466/800/450', hoursAgo: 30 },
+    { title: 'Liga 1 Indonesia: Persija Pimpin Klasemen Setelah Pekan ke-20', slug: 'liga-1-persija-pimpin-klasemen-pekan-20', categoryId: olahraga.id, coverImage: 'https://picsum.photos/id/536/800/450', hoursAgo: 36 },
+    { title: 'Pameran Seni Kontemporer Terbesar Hadir di Jakarta Convention Center', slug: 'pameran-seni-kontemporer-terbesar-jakarta', categoryId: hiburan.id, coverImage: 'https://picsum.photos/id/949/800/450', hoursAgo: 48 },
   ]
 
   for (const data of regularData) {
     await prisma.article.upsert({
       where: { slug: data.slug },
-      update: {},
+      update: { coverImageUrl: data.coverImage },
       create: {
         title: data.title,
         slug: data.slug,

@@ -88,12 +88,7 @@ newsportal/
 ├── public/
 │   ├── llms.txt                      # AI search readiness (llmstxt.org format)
 │   ├── placeholder-article.jpg       # Fallback gambar artikel (ArticleCard)
-│   ├── placeholder-tech.svg          # Placeholder seed: Teknologi
-│   ├── placeholder-biz.svg           # Placeholder seed: Bisnis
-│   ├── placeholder-sport.svg         # Placeholder seed: Olahraga
-│   ├── placeholder-ent.svg           # Placeholder seed: Hiburan
-│   ├── placeholder-health.svg        # Placeholder seed: Kesehatan
-│   └── placeholder-pol.svg           # Placeholder seed: Politik
+│   ├── placeholder-*.svg             # SVG placeholder lama (tidak dipakai seed, tetap ada sebagai fallback)
 ├── src/
 │   ├── actions/
 │   │   ├── article.ts       # Server Actions (createArticleAction, updateArticleAction, saveDraftAction, submitForReviewAction)
@@ -301,7 +296,7 @@ Data seed mencakup:
 - 1 akun journalist: `journalist@newsportal.com` / `password123`
 - 6 kategori: Teknologi, Bisnis, Olahraga, Hiburan, Kesehatan, Politik
 - 8 tag: Breaking News, Eksklusif, Analisis, Opini, Investigasi, Infografis, Video, Podcast
-- 11 artikel contoh (3 featured, 8 regular) — masing-masing dengan `coverImageUrl` dari SVG placeholder lokal per kategori (`/placeholder-{kategori}.svg` di `public/`)
+- 11 artikel contoh (3 featured, 8 regular) — masing-masing dengan `coverImageUrl` dari [picsum.photos](https://picsum.photos) (ID dikurasi per artikel)
 
 Untuk testing semua role di development, jalankan juga:
 ```bash
