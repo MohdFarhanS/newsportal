@@ -28,7 +28,7 @@ function getSections(role: Role): NavSection[] {
     {
       label: "Aktivitas",
       items: [
-        { href: "/dashboard/bookmarks", label: "Bookmark", disabled: true },
+        { href: "/dashboard/bookmarks", label: "Bookmark" },
         { href: "/dashboard/history", label: "Riwayat Baca", disabled: true },
       ],
     },

@@ -51,6 +51,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - Edit profil: nama, bio, link sosial media
 - Upload avatar (PNG / JPEG / WebP, maks 5 MB, force square crop via Cloudinary)
 - Ganti password
+- **Bookmark artikel** — simpan/hapus bookmark dari halaman artikel (tanpa reload), lihat semua bookmark di `/dashboard/bookmarks` dengan paginasi
 
 ### Manajemen Konten *(CMS Dashboard)*
 - Status artikel: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
@@ -95,6 +96,7 @@ newsportal/
 │   ├── actions/
 │   │   ├── article.ts       # Server Actions (createArticleAction, updateArticleAction, saveDraftAction, submitForReviewAction)
 │   │   ├── auth.ts          # Server Actions (logout, changePasswordAction)
+│   │   ├── bookmark.ts      # Server Actions (toggleBookmarkAction)
 │   │   └── profile.ts       # Server Actions (updateProfileAction)
 │   ├── app/
 │   │   ├── api/
@@ -106,7 +108,7 @@ newsportal/
 │   │   │       └── reset-password/route.ts    # POST: simpan password baru
 │   │   ├── article/[slug]/
 │   │   │   ├── ViewTracker.tsx               # Client component: track view
-│   │   │   └── page.tsx                      # Detail artikel
+│   │   │   └── page.tsx                      # Detail artikel (+ bookmark button untuk user login)
 │   │   ├── author/[username]/page.tsx         # Halaman penulis
 │   │   ├── category/[slug]/page.tsx           # Listing per kategori
 │   │   ├── forgot-password/
@@ -125,6 +127,7 @@ newsportal/
 │   │   ├── dashboard/
 │   │   │   ├── layout.tsx                    # Sidebar + auth guard
 │   │   │   ├── page.tsx                      # Overview
+│   │   │   ├── bookmarks/page.tsx            # Daftar bookmark user (FR-BM-03)
 │   │   │   ├── profile/page.tsx              # FR-UM-01
 │   │   │   ├── security/page.tsx             # FR-UM-02
 │   │   │   └── articles/
@@ -143,6 +146,8 @@ newsportal/
 │   │   ├── layout.tsx                         # Root layout (Navbar, font, metadata, JSON-LD)
 │   │   └── page.tsx                           # Homepage (Suspense streaming)
 │   ├── components/
+│   │   ├── bookmark/
+│   │   │   └── BookmarkButton.tsx            # Toggle bookmark (client component, useTransition + toast)
 │   │   ├── dashboard/
 │   │   │   ├── ArticleForm.tsx               # Form create/edit artikel (shared, dengan autosave)
 │   │   │   ├── ChangePasswordForm.tsx        # Change password form
@@ -181,6 +186,7 @@ newsportal/
 │   │   │   └── use-debounce.ts                # Custom hook debounce
 │   │   ├── articles.ts                        # Query artikel (featured, latest, trending, search, related)
 │   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
+│   │   ├── bookmarks.ts                       # Query bookmark: getUserBookmarks, isArticleBookmarked
 │   │   ├── cms-articles.ts                    # Query CMS: getUserArticles, getArticleForEdit
 │   │   ├── auth.ts                            # NextAuth setup + re-validasi JWT ke DB
 │   │   ├── authors.ts                         # Query penulis
@@ -353,6 +359,13 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `getArticlesByCategory(slug, page, perPage)` | Artikel per kategori, default 12/halaman |
 | `getArticlesByAuthor(authorId, page, perPage)` | Artikel per penulis, default 12/halaman |
 | `searchArticles(params)` | ILIKE search (didukung pg_trgm GIN index) + filter kategori / tag / tanggal |
+
+### Query Bookmark (`src/lib/bookmarks.ts`)
+
+| Fungsi | Keterangan |
+|--------|------------|
+| `getUserBookmarks(userId, page, perPage?)` | Semua bookmark milik user, urut createdAt DESC, default 12/halaman |
+| `isArticleBookmarked(userId, articleId)` | Cek apakah artikel sudah di-bookmark user — single `findUnique` pada composite unique index |
 
 ---
 
