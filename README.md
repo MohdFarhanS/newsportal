@@ -52,6 +52,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - Upload avatar (PNG / JPEG / WebP, maks 5 MB, force square crop via Cloudinary)
 - Ganti password
 - **Bookmark artikel** — simpan/hapus bookmark dari halaman artikel (tanpa reload), lihat semua bookmark di `/dashboard/bookmarks` dengan paginasi
+- **Riwayat baca** — artikel yang dibaca otomatis tercatat (hanya pengguna login, `upsert` readAt mencegah duplikasi), lihat di `/dashboard/history` urut terbaru, hapus per-item atau hapus semua sekaligus
 
 ### Manajemen Konten *(CMS Dashboard)*
 - Status artikel: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
@@ -94,10 +95,11 @@ newsportal/
 │   ├── placeholder-*.svg             # SVG placeholder lama (tidak dipakai seed, tetap ada sebagai fallback)
 ├── src/
 │   ├── actions/
-│   │   ├── article.ts       # Server Actions (createArticleAction, updateArticleAction, saveDraftAction, submitForReviewAction)
-│   │   ├── auth.ts          # Server Actions (logout, changePasswordAction)
-│   │   ├── bookmark.ts      # Server Actions (toggleBookmarkAction)
-│   │   └── profile.ts       # Server Actions (updateProfileAction)
+│   │   ├── article.ts          # Server Actions (createArticleAction, updateArticleAction, saveDraftAction, submitForReviewAction)
+│   │   ├── auth.ts             # Server Actions (logout, changePasswordAction)
+│   │   ├── bookmark.ts         # Server Actions (toggleBookmarkAction)
+│   │   ├── profile.ts          # Server Actions (updateProfileAction)
+│   │   └── readingHistory.ts   # Server Actions (trackReadingHistoryAction, deleteReadingHistoryItemAction, clearReadingHistoryAction)
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
@@ -107,6 +109,7 @@ newsportal/
 │   │   │       ├── register/route.ts          # POST: daftar akun baru
 │   │   │       └── reset-password/route.ts    # POST: simpan password baru
 │   │   ├── article/[slug]/
+│   │   │   ├── HistoryTracker.tsx            # Client component: catat riwayat baca (auth-gated)
 │   │   │   ├── ViewTracker.tsx               # Client component: track view
 │   │   │   └── page.tsx                      # Detail artikel (+ bookmark button untuk user login)
 │   │   ├── author/[username]/page.tsx         # Halaman penulis
@@ -128,6 +131,10 @@ newsportal/
 │   │   │   ├── layout.tsx                    # Sidebar + auth guard
 │   │   │   ├── page.tsx                      # Overview
 │   │   │   ├── bookmarks/page.tsx            # Daftar bookmark user (FR-BM-03)
+│   │   │   ├── history/
+│   │   │   │   ├── ClearHistoryButton.tsx    # Client: hapus semua riwayat (useTransition + toast + aria-busy)
+│   │   │   │   ├── DeleteHistoryItemButton.tsx  # Client: hapus satu item (useTransition + toast + aria-busy)
+│   │   │   │   └── page.tsx                  # Daftar riwayat baca (FR-RH-01, FR-RH-02)
 │   │   │   ├── profile/page.tsx              # FR-UM-01
 │   │   │   ├── security/page.tsx             # FR-UM-02
 │   │   │   └── articles/
@@ -188,6 +195,7 @@ newsportal/
 │   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
 │   │   ├── bookmarks.ts                       # Query bookmark: getUserBookmarks, isArticleBookmarked
 │   │   ├── cms-articles.ts                    # Query CMS: getUserArticles, getArticleForEdit
+│   │   ├── readingHistory.ts                  # Query riwayat baca: getUserReadingHistory
 │   │   ├── auth.ts                            # NextAuth setup + re-validasi JWT ke DB
 │   │   ├── authors.ts                         # Query penulis
 │   │   ├── categories.ts                      # Query kategori
@@ -366,6 +374,12 @@ Buka [http://localhost:3000](http://localhost:3000)
 |--------|------------|
 | `getUserBookmarks(userId, page, perPage?)` | Semua bookmark milik user, urut createdAt DESC, default 12/halaman |
 | `isArticleBookmarked(userId, articleId)` | Cek apakah artikel sudah di-bookmark user — single `findUnique` pada composite unique index |
+
+### Query Reading History (`src/lib/readingHistory.ts`)
+
+| Fungsi | Keterangan |
+|--------|------------|
+| `getUserReadingHistory(userId, page, perPage?)` | Semua riwayat baca milik user, urut readAt DESC, default 12/halaman; `upsert` di sisi action memastikan setiap artikel hanya muncul sekali |
 
 ---
 

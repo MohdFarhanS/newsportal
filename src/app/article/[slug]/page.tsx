@@ -9,6 +9,7 @@ import { SANITIZE_OPTIONS } from "@/lib/sanitize"
 import sanitizeHtml from "sanitize-html"
 import { HorizontalCard } from "@/components/news/ArticleCard"
 import { ViewTracker } from "./ViewTracker"
+import { HistoryTracker } from "./HistoryTracker"
 import { auth } from "@/lib/auth"
 import { isArticleBookmarked } from "@/lib/bookmarks"
 import BookmarkButton from "@/components/bookmark/BookmarkButton"
@@ -100,6 +101,7 @@ export default async function ArticlePage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }}
       />
       <ViewTracker articleId={article.id} />
+      {session?.user?.id && <HistoryTracker articleId={article.id} />}
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Category */}
