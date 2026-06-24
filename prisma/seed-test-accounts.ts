@@ -8,6 +8,11 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
+  if (process.env.ALLOW_TEST_SEED !== "true") {
+    console.warn('⚠  seed-test-accounts requires ALLOW_TEST_SEED=true. Skipped.')
+    console.warn('   In production, use seed-admin instead.')
+    return
+  }
   const hash = await bcrypt.hash('password123', 10)
 
   const accounts = [

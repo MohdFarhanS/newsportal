@@ -13,4 +13,6 @@ function makeRateLimiter(tokens: number, window: string) {
 
 // ponytail: returns null if env vars missing — skip rate limiting in dev without Upstash
 export const getRateLimiter = () => makeRateLimiter(5, "15 m")
+// ponytail: login gets its own limiter — 5/15m is too tight for dev switching accounts
+export const getLoginRateLimiter = () => makeRateLimiter(20, "15 m")
 export const getSearchRateLimiter = () => makeRateLimiter(30, "1 m")
