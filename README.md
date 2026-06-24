@@ -76,7 +76,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - Optimasi gambar dengan `next/image` + Cloudinary auto-format/quality (`f_auto,q_auto`)
 - **Suspense streaming** di homepage — Featured, Latest, Trending load secara independen
 - **`React.cache()`** pada `getCategoryBySlug`, `getAuthorById`, `getArticleBySlug` untuk dedup DB call antara `generateMetadata` dan page component
-- `loading.tsx` (skeleton) dan `error.tsx` (error boundary) di root app
+- `loading.tsx` (skeleton) dan `error.tsx` (error boundary) di root app; loading skeleton per-segment di `dashboard/`, `latest/`, `category/[slug]/`, `article/[slug]/`, `author/[username]/` — masing-masing di-shape sesuai layout halaman
 - **Database indexes**: semua FK yang sering di-query punya index eksplisit (`authorId`, `tagId`, `articleId`), index komposit untuk query CMS dan author page, dedikasi index untuk dedup view tracking; `pg_trgm` extension + GIN trigram indexes pada `articles.title` + `articles.excerpt` untuk efisiensi `searchArticles` ILIKE
 
 ---
@@ -111,13 +111,20 @@ newsportal/
 │   │   ├── article/[slug]/
 │   │   │   ├── HistoryTracker.tsx            # Client component: catat riwayat baca (auth-gated)
 │   │   │   ├── ViewTracker.tsx               # Client component: track view
+│   │   │   ├── loading.tsx                   # Skeleton: category + title + author + cover + body lines
 │   │   │   └── page.tsx                      # Detail artikel (+ bookmark button untuk user login)
-│   │   ├── author/[username]/page.tsx         # Halaman penulis
-│   │   ├── category/[slug]/page.tsx           # Listing per kategori
+│   │   ├── author/[username]/
+│   │   │   ├── loading.tsx                   # Skeleton: avatar header + article list
+│   │   │   └── page.tsx                      # Halaman penulis
+│   │   ├── category/[slug]/
+│   │   │   ├── loading.tsx                   # Skeleton: section header + article list
+│   │   │   └── page.tsx                      # Listing per kategori
 │   │   ├── forgot-password/
 │   │   │   ├── forgot-password-form.tsx
 │   │   │   └── page.tsx
-│   │   ├── latest/page.tsx                    # Listing semua artikel
+│   │   ├── latest/
+│   │   │   ├── loading.tsx                   # Skeleton: section header + article list
+│   │   │   └── page.tsx                      # Listing semua artikel
 │   │   ├── login/
 │   │   │   ├── login-form.tsx
 │   │   │   └── page.tsx
@@ -129,6 +136,7 @@ newsportal/
 │   │   │   └── page.tsx
 │   │   ├── dashboard/
 │   │   │   ├── layout.tsx                    # Sidebar + auth guard
+│   │   │   ├── loading.tsx                   # Skeleton: konten area (sidebar tetap visible)
 │   │   │   ├── page.tsx                      # Overview
 │   │   │   ├── bookmarks/page.tsx            # Daftar bookmark user (FR-BM-03)
 │   │   │   ├── history/
