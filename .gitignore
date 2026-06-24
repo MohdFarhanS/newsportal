@@ -49,3 +49,5 @@ CLAUDE.md
 .impeccable
 prd_content.txt
 docs
+.vercel
+.env*
