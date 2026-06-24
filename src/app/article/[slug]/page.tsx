@@ -9,6 +9,9 @@ import { SANITIZE_OPTIONS } from "@/lib/sanitize"
 import sanitizeHtml from "sanitize-html"
 import { HorizontalCard } from "@/components/news/ArticleCard"
 import { ViewTracker } from "./ViewTracker"
+import { auth } from "@/lib/auth"
+import { isArticleBookmarked } from "@/lib/bookmarks"
+import BookmarkButton from "@/components/bookmark/BookmarkButton"
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -54,7 +57,13 @@ export default async function ArticlePage({ params }: Props) {
   const article = await getArticleBySlug(slug)
   if (!article) notFound()
 
-  const related = await getRelatedArticles(article.categoryId, slug)
+  const [related, session] = await Promise.all([
+    getRelatedArticles(article.categoryId, slug),
+    auth(),
+  ])
+  const bookmarked = session?.user?.id
+    ? await isArticleBookmarked(session.user.id, article.id)
+    : false
   const minutes = readingTime(article.content)
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
@@ -112,35 +121,40 @@ export default async function ArticlePage({ params }: Props) {
         <p className="text-lg text-[#6B7280] mb-5 leading-relaxed">{article.excerpt}</p>
 
         {/* Author + date + reading time */}
-        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#E4E4E7]">
-          {article.author.profile?.avatarUrl ? (
-            <Image
-              src={article.author.profile.avatarUrl}
-              alt={article.author.name}
-              width={40}
-              height={40}
-              className="rounded-full object-cover flex-shrink-0"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-[#E4E4E7] flex items-center justify-center text-sm font-semibold text-[#6B7280] flex-shrink-0 select-none">
-              {article.author.name.charAt(0).toUpperCase()}
+        <div className="flex items-center justify-between gap-3 mb-6 pb-6 border-b border-[#E4E4E7]">
+          <div className="flex items-center gap-3 min-w-0">
+            {article.author.profile?.avatarUrl ? (
+              <Image
+                src={article.author.profile.avatarUrl}
+                alt={article.author.name}
+                width={40}
+                height={40}
+                className="rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#E4E4E7] flex items-center justify-center text-sm font-semibold text-[#6B7280] flex-shrink-0 select-none">
+                {article.author.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <Link
+                href={`/author/${article.author.id}`}
+                className="text-sm font-semibold text-[#09090B] hover:underline"
+              >
+                {article.author.name}
+              </Link>
+              <p className="text-xs text-[#6B7280]">
+                {article.publishedAt
+                  ? format(article.publishedAt, "d MMMM yyyy", { locale: idLocale })
+                  : ""}
+                {" · "}
+                {minutes} menit baca
+              </p>
             </div>
-          )}
-          <div>
-            <Link
-              href={`/author/${article.author.id}`}
-              className="text-sm font-semibold text-[#09090B] hover:underline"
-            >
-              {article.author.name}
-            </Link>
-            <p className="text-xs text-[#6B7280]">
-              {article.publishedAt
-                ? format(article.publishedAt, "d MMMM yyyy", { locale: idLocale })
-                : ""}
-              {" · "}
-              {minutes} menit baca
-            </p>
           </div>
+          {session?.user?.id && (
+            <BookmarkButton articleId={article.id} initialBookmarked={bookmarked} />
+          )}
         </div>
 
         {/* Cover Image */}
