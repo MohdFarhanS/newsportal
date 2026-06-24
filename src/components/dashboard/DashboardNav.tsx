@@ -48,7 +48,7 @@ function getSections(role: Role): NavSection[] {
     sections.push({
       label: "Redaksi",
       items: [
-        { href: "/dashboard/review", label: "Antrian Review", disabled: true },
+        { href: "/dashboard/review", label: "Antrian Review" },
       ],
     })
   }

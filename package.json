@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "migrate": "prisma migrate deploy",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:seed:test": "npx tsx prisma/seed-test-accounts.ts",
+    "db:seed:admin": "npx tsx prisma/seed-admin.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

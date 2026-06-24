@@ -61,6 +61,13 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - Upload gambar ke Cloudinary
 - Editor rich text TipTap (link, image)
 
+### Editorial Workflow
+- **Submit for Review** — Jurnalis submit artikel DRAFT/REJECTED ke editor; field wajib divalidasi sebelum submit
+- **Review Queue** (`/dashboard/review`) — Editor/Admin melihat semua artikel berstatus REVIEW dalam urutan FIFO; filter per kategori + paginasi
+- **Approve** — Editor publish artikel langsung dari antrian; `publishedAt` diset otomatis, public pages di-revalidate
+- **Reject** — Editor tolak dengan catatan wajib (maks 2000 karakter); catatan ditampilkan ke jurnalis di halaman edit
+- TOCTOU guard via `updateMany` — jika dua editor mereview artikel yang sama secara bersamaan, yang kedua mendapat 409 Conflict
+
 ### SEO
 - `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`, `/admin/`
 - `sitemap.xml` dinamis — semua published articles + categories + static pages
@@ -103,6 +110,8 @@ newsportal/
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
+│   │   │   ├── articles/[id]/submit/route.ts  # PATCH: submit artikel ke review (JOURNALIST/EDITOR/ADMIN, own article)
+│   │   │   ├── articles/[id]/review/route.ts  # PATCH: approve/reject artikel (EDITOR/ADMIN only)
 │   │   │   └── auth/
 │   │   │       ├── [...nextauth]/route.ts     # NextAuth handler
 │   │   │       ├── forgot-password/route.ts   # POST: kirim email reset
@@ -145,10 +154,17 @@ newsportal/
 │   │   │   │   └── page.tsx                  # Daftar riwayat baca (FR-RH-01, FR-RH-02)
 │   │   │   ├── profile/page.tsx              # FR-UM-01
 │   │   │   ├── security/page.tsx             # FR-UM-02
-│   │   │   └── articles/
-│   │   │       ├── page.tsx                  # Daftar artikel milik user
-│   │   │       ├── new/page.tsx              # Tulis artikel baru (FR-AM-01)
-│   │   │       └── [id]/edit/page.tsx        # Edit artikel (FR-AM-10)
+│   │   │   ├── articles/
+│   │   │   │   ├── page.tsx                  # Daftar artikel milik user
+│   │   │   │   ├── new/page.tsx              # Tulis artikel baru (FR-AM-01)
+│   │   │   │   └── [id]/edit/page.tsx        # Edit artikel (FR-AM-10)
+│   │   │   └── review/
+│   │   │       ├── loading.tsx               # Skeleton: review queue list
+│   │   │       ├── page.tsx                  # Antrian review (EDITOR/ADMIN, FR-AM-06)
+│   │   │       └── [id]/
+│   │   │           ├── loading.tsx           # Skeleton: review detail
+│   │   │           ├── page.tsx              # Detail artikel untuk review (FR-AM-07)
+│   │   │           └── ReviewActions.tsx     # Client: approve/reject dengan Shadcn Dialog
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
 │   │   ├── contact/page.tsx
@@ -202,7 +218,7 @@ newsportal/
 │   │   ├── articles.ts                        # Query artikel (featured, latest, trending, search, related)
 │   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
 │   │   ├── bookmarks.ts                       # Query bookmark: getUserBookmarks, isArticleBookmarked
-│   │   ├── cms-articles.ts                    # Query CMS: getUserArticles, getArticleForEdit
+│   │   ├── cms-articles.ts                    # Query CMS: getUserArticles, getArticleForEdit, getReviewQueue, getArticleForReview
 │   │   ├── readingHistory.ts                  # Query riwayat baca: getUserReadingHistory
 │   │   ├── auth.ts                            # NextAuth setup + re-validasi JWT ke DB
 │   │   ├── authors.ts                         # Query penulis
@@ -347,8 +363,9 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `start` | `next start` | Jalankan production server |
 | `lint` | `eslint` | Linting kode |
 | `migrate` | `prisma migrate deploy` | Apply semua pending migration ke database |
-| `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh ke database |
-| `db:seed-test` | `npx tsx prisma/seed-test-accounts.ts` | Buat akun test untuk semua role (dev only) |
+| `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh (artikel, kategori, tag) ke database |
+| `db:seed:test` | `npx tsx prisma/seed-test-accounts.ts` | Buat 4 akun test (USER/JOURNALIST/EDITOR/ADMIN) — butuh `ALLOW_TEST_SEED=true` di `.env` |
+| `db:seed:admin` | `npx tsx prisma/seed-admin.ts` | Buat/update akun admin dari env vars — aman untuk production |
 
 ---
 
@@ -382,6 +399,15 @@ Buka [http://localhost:3000](http://localhost:3000)
 |--------|------------|
 | `getUserBookmarks(userId, page, perPage?)` | Semua bookmark milik user, urut createdAt DESC, default 12/halaman |
 | `isArticleBookmarked(userId, articleId)` | Cek apakah artikel sudah di-bookmark user — single `findUnique` pada composite unique index |
+
+### Query CMS (`src/lib/cms-articles.ts`)
+
+| Fungsi | Keterangan |
+|--------|------------|
+| `getUserArticles(userId, page, perPage?)` | Semua artikel milik user, urut updatedAt DESC, default 12/halaman |
+| `getArticleForEdit(id, userId)` | Artikel tunggal milik user untuk form edit (ownership check) |
+| `getReviewQueue(page, perPage?, categorySlug?)` | Artikel berstatus REVIEW, urut updatedAt ASC (FIFO), opsional filter kategori |
+| `getArticleForReview(id)` | Artikel tunggal berstatus REVIEW untuk halaman review detail; returns `null` jika bukan REVIEW |
 
 ### Query Reading History (`src/lib/readingHistory.ts`)
 
@@ -427,7 +453,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
 | Phase 4 | CMS Dashboard | Selesai |
-| Phase 5 | Editorial Workflow | Belum dimulai |
+| Phase 5 | Editorial Workflow | Sebagian selesai (Submit for Review, Review Queue, Approve/Reject) |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
 | Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |

@@ -4,8 +4,8 @@ const isDev = process.env.NODE_ENV === "development"
 
 // script-src allows unsafe-eval in dev (Turbopack HMR) but not in production
 const scriptSrc = isDev
-  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://upload-widget.cloudinary.com"
-  : "script-src 'self' 'unsafe-inline' https://upload-widget.cloudinary.com"
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://upload-widget.cloudinary.com https://va.vercel-scripts.com"
+  : "script-src 'self' 'unsafe-inline' https://upload-widget.cloudinary.com https://va.vercel-scripts.com"
 
 const csp = [
   "default-src 'self'",

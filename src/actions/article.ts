@@ -178,11 +178,16 @@ export async function submitForReviewAction(id: string): Promise<{ error?: strin
   if (article.status !== "DRAFT" && article.status !== "REJECTED") {
     return { error: "Status tidak valid untuk submit" }
   }
-  if (!article.title || !article.content || !article.categoryId || !article.excerpt) {
+  const hasContent = article.content.replace(/<[^>]*>/g, "").trim().length > 0
+  if (!article.title || !hasContent || !article.categoryId || !article.excerpt) {
     return { error: "Lengkapi semua field wajib sebelum submit" }
   }
 
-  await db.article.update({ where: { id }, data: { status: "REVIEW" } })
+  const updated = await db.article.updateMany({
+    where: { id, authorId: session.user.id, status: { in: ["DRAFT", "REJECTED"] } },
+    data: { status: "REVIEW" },
+  })
+  if (updated.count === 0) return { error: "Status artikel telah berubah. Muat ulang halaman." }
 
   revalidatePath("/dashboard/articles")
   return {}

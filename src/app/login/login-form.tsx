@@ -27,7 +27,11 @@ export default function LoginForm() {
     setServerError(null)
     const result = await signIn("credentials", { ...data, redirect: false })
     if (result?.error) {
-      setServerError("Email atau kata sandi salah.")
+      setServerError(
+        result.code === "rate_limited"
+          ? "Terlalu banyak percobaan login. Coba lagi dalam beberapa menit."
+          : "Email atau kata sandi salah."
+      )
       return
     }
     const raw = searchParams.get("callbackUrl") ?? "/"
