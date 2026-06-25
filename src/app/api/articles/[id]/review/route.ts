@@ -36,7 +36,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     )
   }
 
-  const { action, note } = body as { action: unknown; note?: unknown }
+  const { action, note, scheduledAt } = body as {
+    action: unknown
+    note?: unknown
+    scheduledAt?: unknown
+  }
 
   if (action !== "approve" && action !== "reject") {
     return NextResponse.json(
@@ -60,6 +64,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     )
   }
 
+  let parsedScheduledAt: Date | null = null
+  if (action === "approve" && scheduledAt !== undefined) {
+    if (typeof scheduledAt !== "string") {
+      return NextResponse.json(
+        { error: { code: "INVALID_SCHEDULED_AT", message: "scheduledAt harus berupa string ISO datetime." } },
+        { status: 400 }
+      )
+    }
+    const parsed = new Date(scheduledAt)
+    if (isNaN(parsed.getTime())) {
+      return NextResponse.json(
+        { error: { code: "INVALID_SCHEDULED_AT", message: "scheduledAt tidak valid." } },
+        { status: 400 }
+      )
+    }
+    if (parsed <= new Date()) {
+      return NextResponse.json(
+        { error: { code: "INVALID_SCHEDULED_AT", message: "Waktu jadwal harus di masa depan." } },
+        { status: 400 }
+      )
+    }
+    parsedScheduledAt = parsed
+  }
+
   const { id } = await params
 
   const article = await db.article.findFirst({
@@ -74,6 +102,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (action === "approve") {
+    if (parsedScheduledAt) {
+      const result = await db.article.updateMany({
+        where: { id, status: "REVIEW" },
+        data: { status: "SCHEDULED", scheduledAt: parsedScheduledAt, rejectionNote: null },
+      })
+      if (result.count === 0) {
+        return NextResponse.json(
+          { error: { code: "CONFLICT", message: "Status artikel telah berubah. Muat ulang halaman." } },
+          { status: 409 }
+        )
+      }
+      revalidatePath("/dashboard/review")
+      revalidatePath("/dashboard/articles")
+      return NextResponse.json({ message: "Artikel dijadwalkan untuk dipublikasikan." })
+    }
+
     // ponytail: updateMany for TOCTOU safety; returns count=0 if status changed between check and write
     const result = await db.article.updateMany({
       where: { id, status: "REVIEW" },
