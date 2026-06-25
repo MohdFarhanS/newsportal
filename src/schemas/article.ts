@@ -5,7 +5,10 @@ export const articleSchema = z.object({
   categoryId: z.string().min(1, "Pilih kategori"),
   tags: z.array(z.string()),
   excerpt: z.string().min(10, "Ringkasan minimal 10 karakter").max(160, "Ringkasan maksimal 160 karakter"),
-  content: z.string().min(1, "Konten tidak boleh kosong"),
+  content: z.string().refine(
+    (v) => v.replace(/<[^>]*>/g, "").trim().length > 0,
+    "Konten tidak boleh kosong"
+  ),
   coverImageUrl: z
     .string()
     .url("URL tidak valid")

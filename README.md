@@ -64,7 +64,8 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 ### Editorial Workflow
 - **Submit for Review** — Jurnalis submit artikel DRAFT/REJECTED ke editor; field wajib divalidasi sebelum submit
 - **Review Queue** (`/dashboard/review`) — Editor/Admin melihat semua artikel berstatus REVIEW dalam urutan FIFO; filter per kategori + paginasi
-- **Approve** — Editor publish artikel langsung dari antrian; `publishedAt` diset otomatis, public pages di-revalidate
+- **Approve** — Editor publish artikel dari antrian melalui dialog konfirmasi; `publishedAt` diset otomatis, public pages di-revalidate
+- **Jadwalkan** — Editor atur waktu publikasi otomatis (harus di masa depan, lokal timezone); artikel masuk status `SCHEDULED` dan tidak muncul di halaman publik sampai waktu tercapai; **Vercel Cron** (setiap hari tengah malam via `vercel.json`) auto-publish SCHEDULED → PUBLISHED dan revalidate semua public pages
 - **Reject** — Editor tolak dengan catatan wajib (maks 2000 karakter); catatan ditampilkan ke jurnalis di halaman edit
 - TOCTOU guard via `updateMany` — jika dua editor mereview artikel yang sama secara bersamaan, yang kedua mendapat 409 Conflict
 
@@ -111,7 +112,9 @@ newsportal/
 │   │   ├── api/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
 │   │   │   ├── articles/[id]/submit/route.ts  # PATCH: submit artikel ke review (JOURNALIST/EDITOR/ADMIN, own article)
-│   │   │   ├── articles/[id]/review/route.ts  # PATCH: approve/reject artikel (EDITOR/ADMIN only)
+│   │   │   ├── articles/[id]/review/route.ts  # PATCH: approve/reject/schedule artikel (EDITOR/ADMIN only)
+│   │   │   ├── cron/
+│   │   │   │   └── publish-scheduled/route.ts # GET: auto-publish SCHEDULED→PUBLISHED (auth: CRON_SECRET)
 │   │   │   └── auth/
 │   │   │       ├── [...nextauth]/route.ts     # NextAuth handler
 │   │   │       ├── forgot-password/route.ts   # POST: kirim email reset
@@ -164,7 +167,7 @@ newsportal/
 │   │   │       └── [id]/
 │   │   │           ├── loading.tsx           # Skeleton: review detail
 │   │   │           ├── page.tsx              # Detail artikel untuk review (FR-AM-07)
-│   │   │           └── ReviewActions.tsx     # Client: approve/reject dengan Shadcn Dialog
+│   │   │           └── ReviewActions.tsx     # Client: approve/jadwalkan/reject dengan Shadcn Dialog
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
 │   │   ├── contact/page.tsx
@@ -239,7 +242,8 @@ newsportal/
 ├── components.json          # Konfigurasi Shadcn/ui
 ├── next.config.ts           # Konfigurasi Next.js (Cloudinary remote pattern, security headers)
 ├── prisma.config.ts         # Konfigurasi Prisma
-└── tsconfig.json            # Konfigurasi TypeScript
+├── tsconfig.json            # Konfigurasi TypeScript
+└── vercel.json              # Vercel Cron jobs (publish-scheduled, hourly)
 ```
 
 ---
@@ -320,6 +324,10 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # Email sender (harus domain yang diverifikasi di Resend)
 EMAIL_FROM="no-reply@mail.yourdomain.com"
+
+# Vercel Cron — generate dengan: node -e "require('crypto').randomBytes(32).toString('hex')"
+# Set nilai yang sama di Vercel Dashboard > Environment Variables
+CRON_SECRET="your-random-hex-secret"
 ```
 
 ### 3. Setup Database
@@ -453,7 +461,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
 | Phase 4 | CMS Dashboard | Selesai |
-| Phase 5 | Editorial Workflow | Sebagian selesai (Submit for Review, Review Queue, Approve/Reject) |
+| Phase 5 | Editorial Workflow | Sebagian selesai (Submit for Review, Review Queue, Approve/Reject, Schedule Publication + Vercel Cron) |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
 | Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |

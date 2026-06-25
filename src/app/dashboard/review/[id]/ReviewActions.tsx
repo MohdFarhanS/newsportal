@@ -11,19 +11,36 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 
+function getMinDatetime(): string {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() + 1)
+  // datetime-local input requires "YYYY-MM-DDThh:mm" in LOCAL time (not UTC)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return (
+    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+    `T${pad(now.getHours())}:${pad(now.getMinutes())}`
+  )
+}
+
 export default function ReviewActions({ articleId }: { articleId: string }) {
   const router = useRouter()
-  const [pending, setPending] = useState<"approve" | "reject" | null>(null)
+  const [pending, setPending] = useState<"approve" | "reject" | "schedule" | null>(null)
+  const [approveOpen, setApproveOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [note, setNote] = useState("")
+  const [scheduledAt, setScheduledAt] = useState("")
 
-  async function callApi(action: "approve" | "reject", noteText?: string): Promise<boolean> {
-    setPending(action)
+  async function callApi(
+    action: "approve" | "reject",
+    extra?: { note?: string; scheduledAt?: string }
+  ): Promise<boolean> {
+    setPending(extra?.scheduledAt ? "schedule" : action)
     try {
       const res = await fetch(`/api/articles/${articleId}/review`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, ...(noteText && { note: noteText }) }),
+        body: JSON.stringify({ action, ...extra }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -38,21 +55,45 @@ export default function ReviewActions({ articleId }: { articleId: string }) {
     }
   }
 
+  async function handleApproveConfirm() {
+    setApproveOpen(false)
+    await callApi("approve")
+  }
+
   async function handleRejectConfirm() {
     if (!note.trim()) return
     setRejectOpen(false)
-    const success = await callApi("reject", note)
+    const success = await callApi("reject", { note })
     if (success) setNote("")
+  }
+
+  function closeScheduleDialog() {
+    setScheduleOpen(false)
+    setScheduledAt("")
+  }
+
+  async function handleScheduleConfirm() {
+    if (!scheduledAt) return
+    const isoValue = new Date(scheduledAt).toISOString()
+    closeScheduleDialog()
+    await callApi("approve", { scheduledAt: isoValue })
   }
 
   return (
     <>
       <button
-        onClick={() => callApi("approve")}
+        onClick={() => setApproveOpen(true)}
         disabled={!!pending}
         className="text-[11px] uppercase tracking-[0.15em] px-4 py-2 bg-zinc-900 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
       >
         {pending === "approve" ? "Memproses..." : "Setujui"}
+      </button>
+      <button
+        onClick={() => setScheduleOpen(true)}
+        disabled={!!pending}
+        className="text-[11px] uppercase tracking-[0.15em] px-4 py-2 border border-zinc-300 text-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+      >
+        {pending === "schedule" ? "Memproses..." : "Jadwalkan"}
       </button>
       <button
         onClick={() => setRejectOpen(true)}
@@ -61,6 +102,69 @@ export default function ReviewActions({ articleId }: { articleId: string }) {
       >
         {pending === "reject" ? "Memproses..." : "Tolak"}
       </button>
+
+      <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading italic">Setujui Artikel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-600">
+              Artikel akan langsung dipublikasikan ke halaman publik. Lanjutkan?
+            </p>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setApproveOpen(false)}
+              className="text-[11px] uppercase tracking-[0.15em] px-4 py-2 text-zinc-500 hover:text-zinc-900 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleApproveConfirm}
+              disabled={!!pending}
+              className="text-[11px] uppercase tracking-[0.15em] px-4 py-2 bg-zinc-900 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+            >
+              Konfirmasi Setujui
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={scheduleOpen} onOpenChange={(open) => { if (!open) closeScheduleDialog() }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading italic">Jadwalkan Publikasi</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-600">
+              Pilih waktu artikel akan dipublikasikan secara otomatis.
+            </p>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              min={getMinDatetime()}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="w-full border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:border-zinc-400"
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={closeScheduleDialog}
+              className="text-[11px] uppercase tracking-[0.15em] px-4 py-2 text-zinc-500 hover:text-zinc-900 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleScheduleConfirm}
+              disabled={!scheduledAt || !!pending}
+              className="text-[11px] uppercase tracking-[0.15em] px-4 py-2 bg-zinc-900 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-700 transition-colors"
+            >
+              Konfirmasi Jadwal
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
