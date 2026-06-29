@@ -57,6 +57,29 @@ export async function getUserArticles(userId: string, page: number = 1, perPage:
   }
 }
 
+export async function getAllArticlesAdmin(page: number = 1, perPage: number = 12) {
+  const [articles, total] = await Promise.all([
+    db.article.findMany({
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+      include: {
+        author: { select: {id: true, name: true} },
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    }),
+    db.article.count(),
+  ])
+
+  return {
+    articles,
+    total,
+    totalPages: Math.ceil(total / perPage),
+  }
+}
+
+export type AdminArticleListItem = Awaited<ReturnType<typeof getAllArticlesAdmin>>["articles"][number]
+
 export async function getArticleForEdit(id: string, userId: string) {
   return db.article.findFirst({
     where: { id, authorId: userId },

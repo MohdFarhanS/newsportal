@@ -57,6 +57,7 @@ function getSections(role: Role): NavSection[] {
     sections.push({
       label: "Admin",
       items: [
+        { href: "/dashboard/manage-articles", label: "Kelola Artikel" },
         { href: "/dashboard/users", label: "Pengguna", disabled: true },
         { href: "/dashboard/taxonomy", label: "Taksonomi", disabled: true },
       ],
@@ -74,7 +75,7 @@ export default function DashboardNav({ role }: { role: Role }) {
     <nav className="space-y-6">
       {sections.map((section) => (
         <div key={section.label}>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2 px-2">
             {section.label}
           </p>
           <ul className="space-y-0.5">
