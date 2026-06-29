@@ -25,9 +25,9 @@ export default async function DashboardLayout({
               Menu
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 pt-10">
+          <SheetContent side="left" className="w-64 pt-10 overflow-y-auto">
             <div className="border-t border-zinc-200 mb-2" />
-            <p className="font-heading text-[11px] uppercase tracking-[0.3em] text-zinc-400 not-italic mb-1">
+            <p className="font-heading text-[11px] uppercase tracking-[0.3em] text-zinc-400 not-italic mb-1 px-2">
               NewsPortal
             </p>
             <div className="h-[2px] bg-red-600 mb-5" />

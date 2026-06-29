@@ -68,6 +68,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - **Jadwalkan** — Editor atur waktu publikasi otomatis (harus di masa depan, lokal timezone); artikel masuk status `SCHEDULED` dan tidak muncul di halaman publik sampai waktu tercapai; **Vercel Cron** (setiap hari tengah malam via `vercel.json`) auto-publish SCHEDULED → PUBLISHED dan revalidate semua public pages
 - **Reject** — Editor tolak dengan catatan wajib (maks 2000 karakter); catatan ditampilkan ke jurnalis di halaman edit
 - TOCTOU guard via `updateMany` — jika dua editor mereview artikel yang sama secara bersamaan, yang kedua mendapat 409 Conflict
+- **Admin Override** (`/dashboard/manage-articles`) — Admin bisa mengubah status artikel ke status apapun tanpa batasan alur editorial; `publishedAt` selalu di-clear saat demote dan diset ulang saat promote ke PUBLISHED; public pages di-revalidate otomatis
 
 ### SEO
 - `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`, `/admin/`
@@ -113,6 +114,7 @@ newsportal/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
 │   │   │   ├── articles/[id]/submit/route.ts  # PATCH: submit artikel ke review (JOURNALIST/EDITOR/ADMIN, own article)
 │   │   │   ├── articles/[id]/review/route.ts  # PATCH: approve/reject/schedule artikel (EDITOR/ADMIN only)
+│   │   │   ├── articles/[id]/override/route.ts # PATCH: override status ke nilai apapun (ADMIN only, FR-AM-09)
 │   │   │   ├── cron/
 │   │   │   │   └── publish-scheduled/route.ts # GET: auto-publish SCHEDULED→PUBLISHED (auth: CRON_SECRET)
 │   │   │   └── auth/
@@ -161,13 +163,16 @@ newsportal/
 │   │   │   │   ├── page.tsx                  # Daftar artikel milik user
 │   │   │   │   ├── new/page.tsx              # Tulis artikel baru (FR-AM-01)
 │   │   │   │   └── [id]/edit/page.tsx        # Edit artikel (FR-AM-10)
-│   │   │   └── review/
-│   │   │       ├── loading.tsx               # Skeleton: review queue list
-│   │   │       ├── page.tsx                  # Antrian review (EDITOR/ADMIN, FR-AM-06)
-│   │   │       └── [id]/
-│   │   │           ├── loading.tsx           # Skeleton: review detail
-│   │   │           ├── page.tsx              # Detail artikel untuk review (FR-AM-07)
-│   │   │           └── ReviewActions.tsx     # Client: approve/jadwalkan/reject dengan Shadcn Dialog
+│   │   │   ├── review/
+│   │   │   │   ├── loading.tsx               # Skeleton: review queue list
+│   │   │   │   ├── page.tsx                  # Antrian review (EDITOR/ADMIN, FR-AM-06)
+│   │   │   │   └── [id]/
+│   │   │   │       ├── loading.tsx           # Skeleton: review detail
+│   │   │   │       ├── page.tsx              # Detail artikel untuk review (FR-AM-07)
+│   │   │   │       └── ReviewActions.tsx     # Client: approve/jadwalkan/reject dengan Shadcn Dialog
+│   │   │   └── manage-articles/
+│   │   │       ├── page.tsx                  # Kelola semua artikel (ADMIN only, FR-AM-09)
+│   │   │       └── OverrideActions.tsx       # Client: override status ke nilai apapun dengan Dialog
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
 │   │   ├── contact/page.tsx
@@ -416,6 +421,7 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `getArticleForEdit(id, userId)` | Artikel tunggal milik user untuk form edit (ownership check) |
 | `getReviewQueue(page, perPage?, categorySlug?)` | Artikel berstatus REVIEW, urut updatedAt ASC (FIFO), opsional filter kategori |
 | `getArticleForReview(id)` | Artikel tunggal berstatus REVIEW untuk halaman review detail; returns `null` jika bukan REVIEW |
+| `getAllArticlesAdmin(page, perPage?)` | Semua artikel semua status semua penulis, urut updatedAt DESC, default 12/halaman — khusus halaman Kelola Artikel ADMIN |
 
 ### Query Reading History (`src/lib/readingHistory.ts`)
 
@@ -432,6 +438,7 @@ Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
 | Route | Akses |
 |-------|-------|
 | `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | Semua role yang sudah login |
+| `/dashboard/manage-articles` | ADMIN only (page-level guard via `auth()`) |
 | `/dashboard/*` lainnya | Login + role bukan USER (JOURNALIST/EDITOR/ADMIN) |
 | `/login`, `/register` | Redirect ke `/` jika sudah login (dicek di page-level via `auth()`) |
 | Semua route lain | Publik |
@@ -461,7 +468,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
 | Phase 4 | CMS Dashboard | Selesai |
-| Phase 5 | Editorial Workflow | Sebagian selesai (Submit for Review, Review Queue, Approve/Reject, Schedule Publication + Vercel Cron) |
+| Phase 5 | Editorial Workflow | Sebagian selesai (Submit for Review, Review Queue, Approve/Reject, Schedule Publication + Vercel Cron, Admin Override) |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
 | Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |
