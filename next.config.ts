@@ -21,6 +21,8 @@ const csp = [
 const nextConfig: NextConfig = {
   images: {
     unoptimized: process.env.NODE_ENV === "development",
+    minimumCacheTTL: 86400,
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",

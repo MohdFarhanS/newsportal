@@ -76,6 +76,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+      </head>
       <body className={`${newsreader.variable} ${roboto.variable} antialiased bg-[#FAFAFA]`}>
         <script
           type="application/ld+json"

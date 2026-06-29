@@ -8,8 +8,8 @@ const PLACEHOLDER = "/placeholder-article.jpg"
 
 function cloudinarySrc(url: string | null | undefined): string {
   if (!url) return PLACEHOLDER
-  // ponytail: insert f_auto,q_auto so Cloudinary serves optimal format+quality before next/image proxies it
-  if (url.includes("res.cloudinary.com")) return url.replace("/upload/", "/upload/f_auto,q_auto/")
+  // ponytail: w_1200 pre-sizes at Cloudinary so next/image receives a smaller origin image; f_auto,q_auto handles format+quality
+  if (url.includes("res.cloudinary.com")) return url.replace("/upload/", "/upload/w_1200,f_auto,q_auto/")
   return url
 }
 
