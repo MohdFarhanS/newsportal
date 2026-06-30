@@ -7,6 +7,7 @@ import { id as localeId } from "date-fns/locale";
 import type { ArticleStatus } from "@/generated/prisma/client";
 import Pagination from "@/components/layout/Pagination";
 import OverrideActions from "./OverrideActions";
+import FeaturedToggle from "./FeaturedToggle";
 
 export const metadata: Metadata = { title: "Kelola Artikel" }
 
@@ -33,18 +34,20 @@ export default async function ManageArticlesPage({
 }) {
     const session = await auth()
     if (!session?.user?.id) redirect("/login")
-    if (session.user.role !== "ADMIN") redirect("/dashboard")
+    const { role } = session.user
+    if (role !== "ADMIN" && role !== "EDITOR") redirect("/dashboard")
 
     const { page: pageParam } = await searchParams
     const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
 
     const { articles, totalPages } = await getAllArticlesAdmin(page)
+    const isAdmin = role === "ADMIN"
 
     return (
         <div>
             <div className="border-t border-zinc-200 mb-2" />
             <p className="font-heading text-[11px] uppercase tracking-[0.3em] text-zinc-400 not-italic">
-                Admin
+                {isAdmin ? "Admin" : "Redaksi"}
             </p>
             <div className="h-[3px] bg-red-600 mt-2 mb-6" />
 
@@ -74,7 +77,12 @@ export default async function ManageArticlesPage({
                         >
                         {STATUS_LABEL[article.status]}
                         </span>
-                        <OverrideActions articleId={article.id} currentStatus={article.status} />
+                        {article.status === "PUBLISHED" && (
+                          <FeaturedToggle articleId={article.id} isFeatured={article.isFeatured} />
+                        )}
+                        {isAdmin && (
+                          <OverrideActions articleId={article.id} currentStatus={article.status} />
+                        )}
                     </div>
                     </div>
                 ))}

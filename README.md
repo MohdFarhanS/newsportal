@@ -69,6 +69,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - **Reject** — Editor tolak dengan catatan wajib (maks 2000 karakter); catatan ditampilkan ke jurnalis di halaman edit
 - TOCTOU guard via `updateMany` — jika dua editor mereview artikel yang sama secara bersamaan, yang kedua mendapat 409 Conflict
 - **Admin Override** (`/dashboard/manage-articles`) — Admin bisa mengubah status artikel ke status apapun tanpa batasan alur editorial; `publishedAt` selalu di-clear saat demote dan diset ulang saat promote ke PUBLISHED; public pages di-revalidate otomatis
+- **Toggle Featured** (`/dashboard/manage-articles`) — Editor/Admin menandai artikel PUBLISHED sebagai featured (★/☆); homepage menampilkan maks 3 artikel featured via `getFeaturedArticles({ take: 3 })`; revalidate homepage + artikel page otomatis; EDITOR hanya melihat Featured toggle, ADMIN melihat Featured toggle + Override
 
 ### SEO
 - `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`, `/admin/`
@@ -288,7 +289,7 @@ enum ArticleStatus { DRAFT, REVIEW, PUBLISHED, REJECTED, SCHEDULED }
 ### Prasyarat
 
 - Node.js 18+
-- PostgreSQL (lokal atau cloud)
+- Akun [Neon](https://neon.tech) — dua branch: `production` (prod) dan `dev` (local). Jangan pakai satu branch untuk keduanya.
 - Akun Cloudinary, Resend
 - Akun Upstash Redis *(opsional — rate limiting di-skip jika env tidak ada)*
 
@@ -305,8 +306,11 @@ npm install
 Buat file `.env` di root project:
 
 ```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/newsportal"
+# Database — Neon branch "dev" untuk local, branch "production" untuk Vercel
+# DATABASE_URL  = pooler URL  (runtime Next.js)
+# DIRECT_URL    = direct URL  (prisma migrate deploy)
+DATABASE_URL="postgresql://neondb_owner:<password>@<dev-branch-pooler-host>/neondb?sslmode=require&channel_binding=require"
+DIRECT_URL="postgresql://neondb_owner:<password>@<dev-branch-direct-host>/neondb?sslmode=require&channel_binding=require"
 
 # NextAuth
 AUTH_SECRET="your-secret-key-min-32-chars"
@@ -468,7 +472,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 2 | Public News Website | Selesai |
 | Phase 3 | Authentication & User Features | Selesai |
 | Phase 4 | CMS Dashboard | Selesai |
-| Phase 5 | Editorial Workflow | Sebagian selesai (Submit for Review, Review Queue, Approve/Reject, Schedule Publication + Vercel Cron, Admin Override) |
+| Phase 5 | Editorial Workflow | Selesai |
 | Phase 6 | Analytics Dashboard | Belum dimulai |
 | Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
 | Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |

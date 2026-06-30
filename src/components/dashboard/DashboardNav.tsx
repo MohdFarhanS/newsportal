@@ -49,6 +49,7 @@ function getSections(role: Role): NavSection[] {
       label: "Redaksi",
       items: [
         { href: "/dashboard/review", label: "Antrian Review" },
+        { href: "/dashboard/manage-articles", label: "Kelola Artikel" },
       ],
     })
   }
@@ -57,7 +58,6 @@ function getSections(role: Role): NavSection[] {
     sections.push({
       label: "Admin",
       items: [
-        { href: "/dashboard/manage-articles", label: "Kelola Artikel" },
         { href: "/dashboard/users", label: "Pengguna", disabled: true },
         { href: "/dashboard/taxonomy", label: "Taksonomi", disabled: true },
       ],
