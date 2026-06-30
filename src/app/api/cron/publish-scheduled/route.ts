@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 
 export async function GET(req: Request) {
   if (!process.env.CRON_SECRET) {
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
   const result = await db.article.updateMany({
     where: { id: { in: articles.map((a) => a.id) }, status: "SCHEDULED" },
-    data: { status: "PUBLISHED", publishedAt: now },
+    data: { status: "PUBLISHED", publishedAt: now, scheduledAt: null },
   })
 
   revalidatePath("/")
@@ -37,9 +37,11 @@ export async function GET(req: Request) {
   revalidatePath("/category/[slug]", "page")
   revalidatePath("/dashboard/review")
   revalidatePath("/dashboard/articles")
+  revalidatePath("/dashboard/manage-articles")
   for (const article of articles) {
     revalidatePath(`/article/${article.slug}`)
   }
+  revalidateTag("analytics")
 
   return NextResponse.json({ published: result.count })
 }
