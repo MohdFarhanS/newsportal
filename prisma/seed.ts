@@ -155,6 +155,17 @@ async function main() {
     await prisma.articleView.createMany({ data: records })
   }
 
+  // Sync articles.viewCount with article_views records so analytics summary
+  // and top-articles table use the same underlying counts.
+  await Promise.all(
+    allArticles.map((article) =>
+      prisma.article.update({
+        where: { id: article.id },
+        data: { viewCount: viewCountMap[article.id] ?? 5 },
+      })
+    )
+  )
+
   console.log('Seed selesai:')
   console.log('  - 1 author  ->  journalist@newsportal.com / password123')
   console.log('  - 6 categories')

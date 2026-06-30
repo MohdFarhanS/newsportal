@@ -32,10 +32,10 @@ export default function ReviewActions({ articleId }: { articleId: string }) {
   const [scheduledAt, setScheduledAt] = useState("")
 
   async function callApi(
-    action: "approve" | "reject",
+    action: "approve" | "reject" | "schedule",
     extra?: { note?: string; scheduledAt?: string }
   ): Promise<boolean> {
-    setPending(extra?.scheduledAt ? "schedule" : action)
+    setPending(action)
     try {
       const res = await fetch(`/api/articles/${articleId}/review`, {
         method: "PATCH",
@@ -76,7 +76,7 @@ export default function ReviewActions({ articleId }: { articleId: string }) {
     if (!scheduledAt) return
     const isoValue = new Date(scheduledAt).toISOString()
     closeScheduleDialog()
-    await callApi("approve", { scheduledAt: isoValue })
+    await callApi("schedule", { scheduledAt: isoValue })
   }
 
   return (

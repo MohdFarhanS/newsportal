@@ -473,6 +473,6 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 3 | Authentication & User Features | Selesai |
 | Phase 4 | CMS Dashboard | Selesai |
 | Phase 5 | Editorial Workflow | Selesai |
-| Phase 6 | Analytics Dashboard | Sebagian selesai (FR-AN-01 summary stats selesai) |
+| Phase 6 | Analytics Dashboard | Sebagian selesai (FR-AN-01 summary stats + FR-AN-02 Top 10 per periode selesai; FR-AN-03 new-user chart belum) |
 | Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
 | Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |

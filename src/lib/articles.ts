@@ -35,32 +35,41 @@ export async function getLatestArticles(page: number, perPage = 6, includeFeatur
 }
 
 export async function getTrendingArticles() {
-  const sevenDaysAgo = subDays(new Date(), 7)
+  try {
+    const sevenDaysAgo = subDays(new Date(), 7)
 
-  const viewCounts = await db.articleView.groupBy({
-    by: ["articleId"],
-    _count: { id: true },
-    where: { viewedAt: { gte: sevenDaysAgo } },
-    orderBy: { _count: { id: "desc" } },
-    take: 5,
-  })
-
-  if (viewCounts.length === 0) return []
-
-  const articleIds = viewCounts.map((v) => v.articleId)
-
-  const articles = await db.article.findMany({
-    where: { id: { in: articleIds }, status: "PUBLISHED" },
-    select: { id: true, slug: true, title: true },
-  })
-
-  return viewCounts
-    .map((v) => {
-      const article = articles.find((a) => a.id === v.articleId)
-      if (!article) return null
-      return { ...article, viewCount: v._count.id }
+    // ponytail: overfetch so unpublished articles don't shrink result below 5
+    const TRENDING_OVERFETCH = 15
+    const viewCounts = await db.articleView.groupBy({
+      by: ["articleId"],
+      _count: { id: true },
+      where: { viewedAt: { gte: sevenDaysAgo } },
+      orderBy: [{ _count: { id: "desc" } }, { articleId: "asc" }],
+      take: TRENDING_OVERFETCH,
     })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
+
+    if (viewCounts.length === 0) return []
+
+    const articleIds = viewCounts.map((v) => v.articleId)
+
+    const articles = await db.article.findMany({
+      where: { id: { in: articleIds }, status: "PUBLISHED" },
+      select: { id: true, slug: true, title: true },
+    })
+
+    const articleMap = new Map(articles.map((a) => [a.id, a]))
+
+    return viewCounts
+      .map((v) => {
+        const article = articleMap.get(v.articleId)
+        if (!article) return null
+        return { ...article, viewCount: v._count.id }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .slice(0, 5)
+  } catch {
+    return []
+  }
 }
 
 export const getArticleBySlug = cache(async (slug: string) => {

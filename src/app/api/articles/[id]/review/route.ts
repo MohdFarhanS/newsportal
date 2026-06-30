@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -42,7 +42,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     scheduledAt?: unknown
   }
 
-  if (action !== "approve" && action !== "reject") {
+  if (action !== "approve" && action !== "reject" && action !== "schedule") {
     return NextResponse.json(
       { error: { code: "INVALID_ACTION", message: "Aksi tidak valid." } },
       { status: 400 }
@@ -65,7 +65,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   let parsedScheduledAt: Date | null = null
-  if (action === "approve" && scheduledAt !== undefined) {
+  if (action === "schedule") {
     if (typeof scheduledAt !== "string") {
       return NextResponse.json(
         { error: { code: "INVALID_SCHEDULED_AT", message: "scheduledAt harus berupa string ISO datetime." } },
@@ -102,22 +102,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (action === "approve") {
-    if (parsedScheduledAt) {
-      const result = await db.article.updateMany({
-        where: { id, status: "REVIEW" },
-        data: { status: "SCHEDULED", scheduledAt: parsedScheduledAt, rejectionNote: null },
-      })
-      if (result.count === 0) {
-        return NextResponse.json(
-          { error: { code: "CONFLICT", message: "Status artikel telah berubah. Muat ulang halaman." } },
-          { status: 409 }
-        )
-      }
-      revalidatePath("/dashboard/review")
-      revalidatePath("/dashboard/articles")
-      return NextResponse.json({ message: "Artikel dijadwalkan untuk dipublikasikan." })
-    }
-
     // ponytail: updateMany for TOCTOU safety; returns count=0 if status changed between check and write
     const result = await db.article.updateMany({
       where: { id, status: "REVIEW" },
@@ -135,11 +119,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     revalidatePath("/latest")
     revalidatePath("/category/[slug]", "page")
     revalidatePath(`/article/${article.slug}`)
+    revalidateTag("analytics")
     return NextResponse.json({ message: "Artikel disetujui dan dipublikasikan." })
-  } else {
+  }
+
+  if (action === "schedule") {
     const result = await db.article.updateMany({
       where: { id, status: "REVIEW" },
-      data: { status: "REJECTED", rejectionNote: noteStr },
+      data: { status: "SCHEDULED", scheduledAt: parsedScheduledAt, rejectionNote: null },
     })
     if (result.count === 0) {
       return NextResponse.json(
@@ -149,6 +136,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     revalidatePath("/dashboard/review")
     revalidatePath("/dashboard/articles")
-    return NextResponse.json({ message: "Artikel ditolak." })
+    return NextResponse.json({ message: "Artikel dijadwalkan untuk dipublikasikan." })
   }
+
+  // action === "reject"
+  const result = await db.article.updateMany({
+    where: { id, status: "REVIEW" },
+    data: { status: "REJECTED", rejectionNote: noteStr },
+  })
+  if (result.count === 0) {
+    return NextResponse.json(
+      { error: { code: "CONFLICT", message: "Status artikel telah berubah. Muat ulang halaman." } },
+      { status: 409 }
+    )
+  }
+  revalidatePath("/dashboard/review")
+  revalidatePath("/dashboard/articles")
+  return NextResponse.json({ message: "Artikel ditolak." })
 }
