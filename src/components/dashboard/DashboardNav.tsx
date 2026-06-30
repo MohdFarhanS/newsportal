@@ -50,6 +50,7 @@ function getSections(role: Role): NavSection[] {
       items: [
         { href: "/dashboard/review", label: "Antrian Review" },
         { href: "/dashboard/manage-articles", label: "Kelola Artikel" },
+        { href: "/dashboard/analytics", label: "Analitik" },
       ],
     })
   }
@@ -72,7 +73,7 @@ export default function DashboardNav({ role }: { role: Role }) {
   const sections = getSections(role)
 
   return (
-    <nav className="space-y-6">
+    <nav aria-label="Dashboard" className="space-y-6">
       {sections.map((section) => (
         <div key={section.label}>
           <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2 px-2">
