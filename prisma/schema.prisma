@@ -7,37 +7,21 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  USER
-  JOURNALIST
-  EDITOR
-  ADMIN
-}
-
-enum ArticleStatus {
-  DRAFT
-  REVIEW
-  REJECTED
-  SCHEDULED
-  PUBLISHED
-}
-
 model User {
-  id                String    @id @default(cuid())
-  name              String
-  email             String    @unique
-  passwordHash      String    @map("password_hash")
-  role              Role      @default(USER)
-  isActive          Boolean   @default(true) @map("is_active")
-  passwordChangedAt DateTime? @map("password_changed_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  profile             Profile?
+  id                  String               @id @default(cuid())
+  name                String
+  email               String               @unique
+  passwordHash        String               @map("password_hash")
+  role                Role                 @default(USER)
+  isActive            Boolean              @default(true) @map("is_active")
+  passwordChangedAt   DateTime?            @map("password_changed_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
   articles            Article[]            @relation("AuthoredArticles")
   bookmarks           Bookmark[]
-  readingHistory      ReadingHistory[]
   passwordResetTokens PasswordResetToken[]
+  profile             Profile?
+  readingHistory      ReadingHistory[]
 
   @@map("users")
 }
@@ -50,76 +34,72 @@ model Profile {
   socialTwitter  String?  @map("social_twitter")
   socialLinkedin String?  @map("social_linkedin")
   updatedAt      DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
 }
 
 model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
   description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  articles Article[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  articles    Article[]
 
   @@map("categories")
 }
 
 model Tag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-
-  articles ArticleTag[]
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  createdAt DateTime     @default(now()) @map("created_at")
+  articles  ArticleTag[]
 
   @@map("tags")
 }
 
 model Article {
-  id            String        @id @default(cuid())
-  authorId      String        @map("author_id")
-  categoryId    String        @map("category_id")
-  title         String
-  slug          String        @unique
-  excerpt       String
-  content       String
-  coverImageUrl String?       @map("cover_image_url")
-  status        ArticleStatus @default(DRAFT)
-  isFeatured    Boolean       @default(false) @map("is_featured")
-  rejectionNote String?       @map("rejection_note")
-  scheduledAt   DateTime?     @map("scheduled_at")
-  publishedAt   DateTime?     @map("published_at")
-  viewCount     Int           @default(0) @map("view_count")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-
-  author   User     @relation("AuthoredArticles", fields: [authorId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
-
+  id             String           @id @default(cuid())
+  authorId       String           @map("author_id")
+  categoryId     String           @map("category_id")
+  title          String
+  slug           String           @unique
+  excerpt        String
+  content        String
+  coverImageUrl  String?          @map("cover_image_url")
+  status         ArticleStatus    @default(DRAFT)
+  isFeatured     Boolean          @default(false) @map("is_featured")
+  rejectionNote  String?          @map("rejection_note")
+  scheduledAt    DateTime?        @map("scheduled_at")
+  publishedAt    DateTime?        @map("published_at")
+  viewCount      Int              @default(0) @map("view_count")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
   tags           ArticleTag[]
+  views          ArticleView[]
+  author         User             @relation("AuthoredArticles", fields: [authorId], references: [id])
+  category       Category         @relation(fields: [categoryId], references: [id])
   bookmarks      Bookmark[]
   readingHistory ReadingHistory[]
-  views          ArticleView[]
 
   @@index([status, publishedAt])
   @@index([isFeatured, publishedAt])
   @@index([categoryId])
   @@index([authorId, updatedAt])
   @@index([authorId, status, publishedAt])
+  @@index([excerpt(ops: raw("gin_trgm_ops"))], map: "articles_excerpt_trgm_idx", type: Gin)
+  @@index([title(ops: raw("gin_trgm_ops"))], map: "articles_title_trgm_idx", type: Gin)
   @@map("articles")
 }
 
 model ArticleTag {
-  articleId String @map("article_id")
-  tagId     String @map("tag_id")
-
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  articleId String  @map("article_id")
+  tagId     String  @map("tag_id")
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([articleId, tagId])
   @@index([tagId])
@@ -131,9 +111,8 @@ model Bookmark {
   userId    String   @map("user_id")
   articleId String   @map("article_id")
   createdAt DateTime @default(now()) @map("created_at")
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, articleId])
   @@index([articleId])
@@ -145,9 +124,8 @@ model ReadingHistory {
   userId    String   @map("user_id")
   articleId String   @map("article_id")
   readAt    DateTime @default(now()) @map("read_at")
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, articleId])
   @@index([userId, readAt])
@@ -160,8 +138,7 @@ model ArticleView {
   articleId  String   @map("article_id")
   viewerHash String   @map("viewer_hash")
   viewedAt   DateTime @default(now()) @map("viewed_at")
-
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([articleId, viewedAt])
   @@index([articleId, viewerHash, viewedAt])
@@ -175,10 +152,24 @@ model PasswordResetToken {
   expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
   createdAt DateTime  @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+enum Role {
+  USER
+  JOURNALIST
+  EDITOR
+  ADMIN
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  REJECTED
+  SCHEDULED
+  PUBLISHED
 }
