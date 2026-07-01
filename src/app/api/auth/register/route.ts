@@ -1,5 +1,7 @@
-﻿import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import { revalidateTag } from "next/cache"
+import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/schemas/auth"
 import { getRateLimiter } from "@/lib/rate-limit"
@@ -41,15 +43,30 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(password, 12)
 
-  await db.user.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-      role: "USER",
-      profile: { create: {} },
-    },
-  })
+  try {
+    await db.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        role: "USER",
+        profile: { create: {} },
+      },
+    })
+  } catch (e) {
+    // Handles TOCTOU: two concurrent requests with same email both pass findUnique,
+    // second create hits unique constraint — return clean 409 instead of 500.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json(
+        { error: { code: "EMAIL_EXISTS", message: "Email sudah terdaftar." } },
+        { status: 409 }
+      )
+    }
+    throw e
+  }
+
+  // Only bust the user chart cache — registration does not affect article analytics.
+  revalidateTag("analytics-users")
 
   return NextResponse.json({ message: "Registrasi berhasil." }, { status: 201 })
 }

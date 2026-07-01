@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { format, parseISO } from "date-fns"
 import { auth } from "@/lib/auth"
-import { getAnalyticsSummary, getTopArticles } from "@/lib/analytics"
+import { getAnalyticsSummary, getTopArticles, getNewUsersPerWeek, type WeeklyUsers } from "@/lib/analytics"
 
 export const metadata: Metadata = { title: "Analitik" }
 
@@ -15,7 +16,60 @@ const RANGE_LABELS: Record<Range, string> = {
   all: "Semua Waktu",
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+// null = fetch error (show error UI); [] = genuine empty (no users yet)
+function NewUsersChart({ data }: { data: WeeklyUsers[] | null }) {
+  if (data === null) {
+    return (
+      <div className="border border-zinc-200 px-5 py-8 text-sm text-zinc-400 text-center">
+        Gagal memuat data. Coba muat ulang halaman.
+      </div>
+    )
+  }
+  if (data.length === 0) {
+    return (
+      <div className="border border-zinc-200 px-5 py-8 text-sm text-zinc-400 text-center">
+        Belum ada data pengguna.
+      </div>
+    )
+  }
+
+  const maxCount = Math.max(...data.map((d) => d.count), 1)
+
+  return (
+    <div
+      role="img"
+      aria-label="Grafik pengguna baru per minggu (12 minggu terakhir)"
+      className="border border-zinc-200 p-5"
+    >
+      <div className="flex items-end gap-px sm:gap-1 h-36" aria-hidden="true">
+        {data.map(({ week, count }) => (
+          <div key={week} className="flex-1 flex flex-col items-center justify-end h-full group">
+            <div
+              className="relative w-full bg-red-600 hover:bg-red-700 transition-colors rounded-t-sm"
+              style={{ height: count === 0 ? "2px" : `${Math.round((count / maxCount) * 100)}%` }}
+            >
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-mono text-zinc-600 hidden group-hover:block whitespace-nowrap z-10 bg-white border border-zinc-200 px-1 rounded">
+                {count}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-px sm:gap-1 mt-2">
+        {data.map(({ week }, i) => (
+          <div
+            key={week}
+            className={`flex-1 text-center text-[9px] text-zinc-400 truncate ${i % 3 !== 0 && i !== data.length - 1 ? "invisible" : ""}`}
+          >
+            {format(parseISO(week), "d/M")}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, sublabel }: { label: string; value: number; sublabel?: string }) {
   return (
     <div className="border border-zinc-200 p-5">
       <dl>
@@ -23,6 +77,9 @@ function StatCard({ label, value }: { label: string; value: number }) {
         <dd className="font-heading italic text-[36px] leading-none font-bold text-zinc-900">
           {value.toLocaleString("id-ID")}
         </dd>
+        {sublabel && (
+          <dd className="text-[9px] uppercase tracking-[0.1em] text-zinc-300 mt-1">{sublabel}</dd>
+        )}
       </dl>
     </div>
   )
@@ -44,10 +101,19 @@ export default async function AnalyticsPage({
       ? (rawRange as Range)
       : "7d"
 
-  const [{ totalArticles, publishedArticles, totalViews }, topArticles] =
-    await Promise.all([getAnalyticsSummary(), getTopArticles(range)])
-
   const isAdmin = role === "ADMIN"
+
+  // Promise.allSettled: each section fails independently; DB errors are not cached by unstable_cache
+  const [summaryResult, topArticlesResult, newUsersResult] = await Promise.allSettled([
+    getAnalyticsSummary(),
+    getTopArticles(range),
+    isAdmin ? getNewUsersPerWeek() : Promise.resolve<WeeklyUsers[]>([]),
+  ])
+
+  const summary = summaryResult.status === "fulfilled" ? summaryResult.value : null
+  const topArticles = topArticlesResult.status === "fulfilled" ? topArticlesResult.value : null
+  // EDITOR always gets [], only ADMIN path can produce null (error) or real data
+  const newUsersData = newUsersResult.status === "fulfilled" ? newUsersResult.value : null
 
   return (
     <div>
@@ -62,9 +128,17 @@ export default async function AnalyticsPage({
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        <StatCard label="Total Artikel" value={totalArticles} />
-        <StatCard label="Artikel Published" value={publishedArticles} />
-        <StatCard label="Total Views" value={totalViews} />
+        {summary === null ? (
+          <div className="col-span-3 border border-zinc-200 px-5 py-4 text-sm text-zinc-400 text-center">
+            Gagal memuat statistik.
+          </div>
+        ) : (
+          <>
+            <StatCard label="Total Artikel" value={summary.totalArticles} />
+            <StatCard label="Artikel Published" value={summary.publishedArticles} />
+            <StatCard label="Total Views" value={summary.totalViews} sublabel="semua waktu" />
+          </>
+        )}
       </div>
 
       <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
@@ -76,7 +150,7 @@ export default async function AnalyticsPage({
             <Link
               key={r}
               href={`/dashboard/analytics?range=${r}`}
-              aria-current={range === r ? "page" : undefined}
+              aria-current={range === r ? true : undefined}
               className={`px-3 py-1 text-[11px] uppercase tracking-[0.15em] border transition-colors ${
                 range === r
                   ? "border-red-600 text-red-600 bg-red-50"
@@ -90,7 +164,11 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="border border-zinc-200">
-        {topArticles.length === 0 ? (
+        {topArticles === null ? (
+          <p className="px-5 py-8 text-sm text-zinc-400 text-center">
+            Gagal memuat data artikel.
+          </p>
+        ) : topArticles.length === 0 ? (
           <p className="px-5 py-8 text-sm text-zinc-400 text-center">
             Belum ada data untuk periode ini.
           </p>
@@ -147,6 +225,15 @@ export default async function AnalyticsPage({
           </table>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="mt-10">
+          <h2 className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-medium mb-4">
+            Pengguna Baru per Minggu
+          </h2>
+          <NewUsersChart data={newUsersData} />
+        </div>
+      )}
     </div>
   )
 }

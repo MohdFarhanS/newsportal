@@ -71,6 +71,11 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - **Admin Override** (`/dashboard/manage-articles`) — Admin bisa mengubah status artikel ke status apapun tanpa batasan alur editorial; `publishedAt` selalu di-clear saat demote dan diset ulang saat promote ke PUBLISHED; public pages di-revalidate otomatis
 - **Toggle Featured** (`/dashboard/manage-articles`) — Editor/Admin menandai artikel PUBLISHED sebagai featured (★/☆); homepage menampilkan maks 3 artikel featured via `getFeaturedArticles({ take: 3 })`; revalidate homepage + artikel page otomatis; EDITOR hanya melihat Featured toggle, ADMIN melihat Featured toggle + Override
 
+### Analytics Dashboard *(EDITOR & ADMIN)*
+- **Summary stats** — Total artikel, artikel published, total views (cache 60s, revalidate on publish/override)
+- **Top 10 artikel per periode** — Ranking berdasarkan jumlah view dari `article_views` (7 hari / 30 hari / semua waktu); tab filter via URL `?range=`; tabel responsif (Kategori hidden <sm, Penulis hidden <md)
+- **Grafik pengguna baru per minggu** *(ADMIN only)* — Pure CSS bar chart tanpa library eksternal; 12 minggu terakhir; week boundaries menggunakan timezone WIB (UTC+7) agar Senin 00:00 WIB menjadi batas periode; hover tooltip menampilkan jumlah; x-axis label tiap 3 minggu; cache 3600s
+
 ### SEO
 - `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`, `/admin/`
 - `sitemap.xml` dinamis — semua published articles + categories + static pages
@@ -171,8 +176,11 @@ newsportal/
 │   │   │   │       ├── loading.tsx           # Skeleton: review detail
 │   │   │   │       ├── page.tsx              # Detail artikel untuk review (FR-AM-07)
 │   │   │   │       └── ReviewActions.tsx     # Client: approve/jadwalkan/reject dengan Shadcn Dialog
+│   │   │   ├── analytics/
+│   │   │   │   ├── loading.tsx               # Skeleton: stat cards + tab filter + tabel
+│   │   │   │   └── page.tsx                  # Analytics (EDITOR/ADMIN; grafik pengguna hanya ADMIN)
 │   │   │   └── manage-articles/
-│   │   │       ├── page.tsx                  # Kelola semua artikel (ADMIN only, FR-AM-09)
+│   │   │       ├── page.tsx                  # Kelola semua artikel (EDITOR/ADMIN, FR-AM-09)
 │   │   │       └── OverrideActions.tsx       # Client: override status ke nilai apapun dengan Dialog
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
@@ -224,6 +232,7 @@ newsportal/
 │   │   │   └── view.ts                        # Server Action: pelacakan view artikel
 │   │   ├── hooks/
 │   │   │   └── use-debounce.ts                # Custom hook debounce
+│   │   ├── analytics.ts                       # getAnalyticsSummary, getTopArticles, getNewUsersPerWeek (server-only, unstable_cache)
 │   │   ├── articles.ts                        # Query artikel (featured, latest, trending, search, related)
 │   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
 │   │   ├── bookmarks.ts                       # Query bookmark: getUserBookmarks, isArticleBookmarked
