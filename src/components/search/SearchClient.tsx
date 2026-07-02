@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import FilterPanel, { type Category, type Tag } from "@/components/search/FilterPanel"
 import SearchResults from "@/components/search/SearchResults"
 import type { ArticleWithRelations } from "@/lib/articles"
+import { parsePage } from "@/lib/pagination"
 
 interface SearchClientProps {
   initialCategories: Category[]
@@ -35,7 +36,7 @@ export default function SearchClient({ initialCategories, initialTags }: SearchC
   const urlCategory = searchParams.get("category") ?? ""
   const urlTag = searchParams.get("tag") ?? ""
   const urlDate = searchParams.get("date") ?? ""
-  const urlPage = Math.max(1, Number(searchParams.get("page")) || 1)
+  const urlPage = parsePage(searchParams.get("page") ?? undefined)
 
   const [inputValue, setInputValue] = useState(urlQuery)
   const debouncedQuery = useDebounce(inputValue, 300)

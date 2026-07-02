@@ -3,31 +3,44 @@ import { HorizontalCard } from "@/components/news/ArticleCard"
 import Pagination from "@/components/layout/Pagination"
 import SectionHeader from "@/components/news/SectionHeader"
 import { getLatestArticles } from "@/lib/articles"
-
-export const metadata: Metadata = {
-  title: "Latest News",
-  description: "Semua artikel terbaru dari NewsPortal.",
-  alternates: { canonical: "/latest" },
-  openGraph: {
-    title: "Latest News | NewsPortal",
-    description: "Semua artikel terbaru dari NewsPortal.",
-    type: "website",
-    url: "/latest",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Latest News | NewsPortal",
-    description: "Semua artikel terbaru dari NewsPortal.",
-  },
-}
+import { parsePage } from "@/lib/pagination"
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>
 }
 
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const { page: pageParam } = await searchParams
+  const page = parsePage(pageParam)
+  const isPaginated = page > 1
+  const canonical = isPaginated ? `/latest?page=${page}` : "/latest"
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const ogImage = `${base}/og-default.jpg`
+
+  return {
+    title: "Latest News",
+    description: "Semua artikel terbaru dari NewsPortal.",
+    alternates: { canonical },
+    ...(isPaginated && { robots: { index: false, follow: true } }),
+    openGraph: {
+      title: "Latest News | NewsPortal",
+      description: "Semua artikel terbaru dari NewsPortal.",
+      type: "website",
+      url: canonical,
+      images: [{ url: ogImage, alt: "NewsPortal" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Latest News | NewsPortal",
+      description: "Semua artikel terbaru dari NewsPortal.",
+      images: [ogImage],
+    },
+  }
+}
+
 export default async function LatestPage({ searchParams }: PageProps) {
   const { page: pageParam } = await searchParams
-  const page = Math.max(1, Number(pageParam) || 1)
+  const page = parsePage(pageParam)
 
   const { articles, totalPages } = await getLatestArticles(page, 12, true)
 
