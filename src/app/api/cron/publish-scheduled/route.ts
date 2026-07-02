@@ -38,6 +38,7 @@ export async function GET(req: Request) {
   revalidatePath("/dashboard/review")
   revalidatePath("/dashboard/articles")
   revalidatePath("/dashboard/manage-articles")
+  revalidatePath("/sitemap.xml")
   for (const article of articles) {
     revalidatePath(`/article/${article.slug}`)
   }

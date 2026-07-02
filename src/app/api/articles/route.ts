@@ -2,6 +2,7 @@
 import { subDays } from "date-fns"
 import { searchArticles } from "@/lib/articles"
 import { getSearchRateLimiter } from "@/lib/rate-limit"
+import { parsePage } from "@/lib/pagination"
 
 export async function GET(request: NextRequest) {
   const rl = getSearchRateLimiter()
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get("category") ?? undefined
   const tag = searchParams.get("tag") ?? undefined
   const datePreset = searchParams.get("date") ?? ""
-  const page = Math.max(1, Number(searchParams.get("page")) || 1)
+  const page = parsePage(searchParams.get("page") ?? undefined)
 
   let dateFrom: Date | undefined
   if (datePreset === "7d") dateFrom = subDays(new Date(), 7)

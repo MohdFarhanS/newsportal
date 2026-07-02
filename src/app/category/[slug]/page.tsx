@@ -5,31 +5,43 @@ import Pagination from "@/components/layout/Pagination"
 import SectionHeader from "@/components/news/SectionHeader"
 import { getArticlesByCategory } from "@/lib/articles"
 import { getCategoryBySlug } from "@/lib/categories"
+import { parsePage } from "@/lib/pagination"
 
 interface PageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ page?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
+  const { page: pageParam } = await searchParams
+  const page = parsePage(pageParam)
+  const isPaginated = page > 1
+
   const category = await getCategoryBySlug(slug)
   if (!category) return {}
   const description = category.description ?? `Artikel kategori ${category.name} dari NewsPortal.`
+  const canonical = isPaginated ? `/category/${slug}?page=${page}` : `/category/${slug}`
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const ogImage = `${base}/og-default.jpg`
+
   return {
     title: category.name,
     description,
-    alternates: { canonical: `/category/${slug}` },
+    alternates: { canonical },
+    ...(isPaginated && { robots: { index: false, follow: true } }),
     openGraph: {
       title: `${category.name} | NewsPortal`,
       description,
       type: "website",
-      url: `/category/${slug}`,
+      url: canonical,
+      images: [{ url: ogImage, alt: category.name }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${category.name} | NewsPortal`,
       description,
+      images: [ogImage],
     },
   }
 }
@@ -37,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const { page: pageParam } = await searchParams
-  const page = Math.max(1, Number(pageParam) || 1)
+  const page = parsePage(pageParam)
 
   const category = await getCategoryBySlug(slug)
   if (!category) notFound()

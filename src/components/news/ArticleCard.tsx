@@ -6,7 +6,7 @@ import type { ArticleWithRelations, TrendingArticle } from "@/lib/articles"
 
 const PLACEHOLDER = "/placeholder-article.jpg"
 
-function cloudinarySrc(url: string | null | undefined): string {
+export function cloudinarySrc(url: string | null | undefined): string {
   if (!url) return PLACEHOLDER
   // ponytail: w_1200 pre-sizes at Cloudinary so next/image receives a smaller origin image; f_auto,q_auto handles format+quality
   if (url.includes("res.cloudinary.com")) return url.replace("/upload/", "/upload/w_1200,f_auto,q_auto/")

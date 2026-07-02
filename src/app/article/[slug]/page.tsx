@@ -7,7 +7,7 @@ import { id as idLocale } from "date-fns/locale"
 import { getArticleBySlug, getRelatedArticles } from "@/lib/articles"
 import { SANITIZE_OPTIONS } from "@/lib/sanitize"
 import sanitizeHtml from "sanitize-html"
-import { HorizontalCard } from "@/components/news/ArticleCard"
+import { HorizontalCard, cloudinarySrc } from "@/components/news/ArticleCard"
 import { ViewTracker } from "./ViewTracker"
 import { HistoryTracker } from "./HistoryTracker"
 import { auth } from "@/lib/auth"
@@ -23,6 +23,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getArticleBySlug(slug)
   if (!article) return {}
 
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const ogImage = article.coverImageUrl ?? `${base}/og-default.jpg`
+
   return {
     title: article.title,
     description: article.excerpt,
@@ -34,15 +37,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: article.publishedAt?.toISOString(),
       modifiedTime: article.updatedAt.toISOString(),
       authors: [article.author.name],
-      images: article.coverImageUrl
-        ? [{ url: article.coverImageUrl, alt: article.title }]
-        : [],
+      images: [{ url: ogImage, alt: article.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description: article.excerpt,
-      images: article.coverImageUrl ? [article.coverImageUrl] : [],
+      images: [ogImage],
     },
   }
 }
@@ -76,8 +77,24 @@ export default async function ArticlePage({ params }: Props) {
     description: article.excerpt,
     datePublished: article.publishedAt?.toISOString(),
     dateModified: article.updatedAt.toISOString(),
-    author: { "@type": "Person", name: article.author.name },
-    ...(article.coverImageUrl && { image: [article.coverImageUrl] }),
+    author: {
+      "@type": "Person",
+      name: article.author.name,
+      url: `${base}/author/${article.author.id}`,
+    },
+    image: [article.coverImageUrl ?? `${base}/og-default.jpg`],
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${base}/article/${slug}` },
+    isAccessibleForFree: true,
+    publisher: {
+      "@type": "Organization",
+      name: "NewsPortal",
+      logo: {
+        "@type": "ImageObject",
+        url: `${base}/logo.png`,
+        width: 512,
+        height: 512,
+      },
+    },
   }
 
   const breadcrumbLd = {
@@ -163,7 +180,7 @@ export default async function ArticlePage({ params }: Props) {
         {article.coverImageUrl && (
           <div className="relative aspect-video w-full overflow-hidden rounded mb-8">
             <Image
-              src={article.coverImageUrl}
+              src={cloudinarySrc(article.coverImageUrl)}
               alt={article.title}
               fill
               className="object-cover"

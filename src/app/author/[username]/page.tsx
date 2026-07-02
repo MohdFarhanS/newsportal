@@ -6,6 +6,7 @@ import { HorizontalCard } from "@/components/news/ArticleCard"
 import Pagination from "@/components/layout/Pagination"
 import { getAuthorById } from "@/lib/authors"
 import { getArticlesByAuthor } from "@/lib/articles"
+import { parsePage } from "@/lib/pagination"
 
 function safeExternalUrl(url: string | null | undefined): string | null {
   if (!url) return null
@@ -22,28 +23,36 @@ interface PageProps {
   searchParams: Promise<{ page?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { username } = await params
+  const { page: pageParam } = await searchParams
+  const page = parsePage(pageParam)
+  const isPaginated = page > 1
+
   const author = await getAuthorById(username)
   if (!author) return {}
   const description = author.profile?.bio ?? `Baca artikel-artikel dari ${author.name} di NewsPortal.`
+  const canonical = isPaginated ? `/author/${username}?page=${page}` : `/author/${username}`
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const ogImage = author.profile?.avatarUrl ?? `${base}/og-default.jpg`
+
   return {
     title: `Artikel oleh ${author.name}`,
     description,
-    alternates: { canonical: `/author/${username}` },
+    alternates: { canonical },
+    ...(isPaginated && { robots: { index: false, follow: true } }),
     openGraph: {
       title: `Artikel oleh ${author.name} | NewsPortal`,
       description,
       type: "profile",
-      url: `/author/${username}`,
-      ...(author.profile?.avatarUrl && {
-        images: [{ url: author.profile.avatarUrl, alt: author.name }],
-      }),
+      url: canonical,
+      images: [{ url: ogImage, alt: author.name }],
     },
     twitter: {
       card: "summary",
       title: `Artikel oleh ${author.name} | NewsPortal`,
       description,
+      images: [ogImage],
     },
   }
 }
@@ -51,7 +60,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AuthorPage({ params, searchParams }: PageProps) {
   const { username } = await params
   const { page: pageParam } = await searchParams
-  const page = Math.max(1, Number(pageParam) || 1)
+  const page = parsePage(pageParam)
 
   const author = await getAuthorById(username)
   if (!author) notFound()

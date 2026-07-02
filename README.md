@@ -106,7 +106,9 @@ newsportal/
 │   └── seed.ts              # Script seeding data contoh
 ├── public/
 │   ├── llms.txt                      # AI search readiness (llmstxt.org format)
-│   ├── placeholder-article.jpg       # Fallback gambar artikel (ArticleCard)
+│   ├── logo.png                      # Organization/publisher logo (512x512, JSON-LD Organization.logo + NewsArticle.publisher.logo)
+│   ├── og-default.jpg                # Fallback OG/Twitter image (1200x630) untuk halaman tanpa cover image
+│   ├── placeholder-article.jpg       # Fallback gambar artikel (ArticleCard) — sama dengan og-default.jpg
 │   ├── placeholder-*.svg             # SVG placeholder lama (tidak dipakai seed, tetap ada sebagai fallback)
 ├── src/
 │   ├── actions/
@@ -205,7 +207,7 @@ newsportal/
 │   │   ├── layout/
 │   │   │   ├── Footer.tsx
 │   │   │   ├── LogoutButton.tsx
-│   │   │   ├── Navbar.tsx                     # Header sticky + navigasi kategori
+│   │   │   ├── Navbar.tsx                     # Header sticky + navigasi kategori (desktop inline, mobile via Sheet drawer)
 │   │   │   └── Pagination.tsx                 # Paginasi dengan ellipsis
 │   │   ├── news/
 │   │   │   ├── ArticleCard.tsx                # HeroCard, HorizontalCard, SecondaryCard, NumberedCard
@@ -483,5 +485,5 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 | Phase 4 | CMS Dashboard | Selesai |
 | Phase 5 | Editorial Workflow | Selesai |
 | Phase 6 | Analytics Dashboard | Sebagian selesai (FR-AN-01 summary stats + FR-AN-02 Top 10 per periode selesai; FR-AN-03 new-user chart belum) |
-| Phase 7 | SEO Optimization | Sebagian selesai (robots, sitemap, JSON-LD, OG, llms.txt) |
+| Phase 7 | SEO Optimization | Selesai (robots, sitemap, JSON-LD, OG, llms.txt — diverifikasi via Lighthouse + browser + schema validation) |
 | Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |

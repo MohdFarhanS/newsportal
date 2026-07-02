@@ -49,6 +49,12 @@ const organizationLd = {
       name: "NewsPortal",
       url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
       description: "Portal berita modern dengan konten terkini dan terpercaya untuk pembaca Indonesia.",
+      logo: {
+        "@type": "ImageObject",
+        url: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/logo.png`,
+        width: 512,
+        height: 512,
+      },
     },
     {
       "@type": "WebSite",
