@@ -59,8 +59,8 @@ function getSections(role: Role): NavSection[] {
     sections.push({
       label: "Admin",
       items: [
-        { href: "/dashboard/users", label: "Pengguna", disabled: true },
-        { href: "/dashboard/taxonomy", label: "Taksonomi", disabled: true },
+        { href: "/dashboard/users", label: "Pengguna" },
+        { href: "/dashboard/taxonomy", label: "Taksonomi" },
       ],
     })
   }

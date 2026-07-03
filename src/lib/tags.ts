@@ -7,3 +7,10 @@ export async function getAllTags() {
     select: { id: true, name: true, slug: true },
   })
 }
+
+export async function getAllTagsWithCount() {
+  return db.tag.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { articles: true } } },
+  })
+}
