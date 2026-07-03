@@ -129,7 +129,15 @@ export default async function AuthorPage({ params, searchParams }: PageProps) {
       </h2>
 
       {articles.length === 0 ? (
-        <p className="text-sm text-[#6B7280]">Belum ada artikel yang dipublikasikan.</p>
+        <div className="border-t border-[#E4E4E7] pt-8 text-center">
+          <p className="text-sm text-[#6B7280] mb-4">Belum ada artikel yang dipublikasikan.</p>
+          <Link
+            href="/latest"
+            className="text-sm text-[#09090B] underline underline-offset-2 hover:text-red-600"
+          >
+            Lihat semua artikel terbaru →
+          </Link>
+        </div>
       ) : (
         <div className="flex flex-col gap-5 divide-y divide-[#E4E4E7]">
           {articles.map((article) => (

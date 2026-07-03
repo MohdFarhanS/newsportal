@@ -61,6 +61,10 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - Upload gambar ke Cloudinary
 - Editor rich text TipTap (link, image)
 
+### Administrasi *(ADMIN only)*
+- **Kelola Taksonomi** (`/dashboard/taxonomy`) — CRUD kategori dan tag dalam satu halaman (tab); slug auto-derive dari nama; hapus diblokir jika kategori/tag masih dipakai artikel (kategori: dicegah oleh FK RESTRICT + guard aplikasi; tag: guard aplikasi murni karena relasi tag di-cascade di level DB)
+- **Kelola Pengguna** (`/dashboard/users`) — daftar semua pengguna dengan paginasi + filter role, ubah role inline, aktifkan/nonaktifkan akun (perubahan langsung mencabut sesi aktif pengguna tersebut); admin tidak dapat mengubah role atau menonaktifkan akun sendiri
+
 ### Editorial Workflow
 - **Submit for Review** — Jurnalis submit artikel DRAFT/REJECTED ke editor; field wajib divalidasi sebelum submit
 - **Review Queue** (`/dashboard/review`) — Editor/Admin melihat semua artikel berstatus REVIEW dalam urutan FIFO; filter per kategori + paginasi
@@ -77,10 +81,10 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - **Grafik pengguna baru per minggu** *(ADMIN only)* — Pure CSS bar chart tanpa library eksternal; 12 minggu terakhir; week boundaries menggunakan timezone WIB (UTC+7) agar Senin 00:00 WIB menjadi batas periode; hover tooltip menampilkan jumlah; x-axis label tiap 3 minggu; cache 3600s
 
 ### SEO
-- `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`, `/admin/`
+- `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`
 - `sitemap.xml` dinamis — semua published articles + categories + static pages
 - **Open Graph + Twitter Card** di semua halaman: homepage, artikel, listing (`/latest`, `/category/[slug]`, `/author/[username]`), search (noindex)
-- **JSON-LD structured data**: `NewsArticle` + `BreadcrumbList` di artikel, `BreadcrumbList` di category pages, `Organization` + `WebSite` + `SearchAction` di root layout
+- **JSON-LD structured data**: `NewsArticle` (+ `publisher.logo`, `mainEntityOfPage`, `isAccessibleForFree`, `author.url` untuk Rich Results/Top Stories eligibility) + `BreadcrumbList` di artikel, `BreadcrumbList` di category pages, `Organization` (+ `logo`) + `WebSite` + `SearchAction` di root layout
 - Custom 404 (`not-found.tsx`) — editorial style dengan internal links
 - `public/llms.txt` — AI search readiness sesuai [llmstxt.org](https://llmstxt.org) spec
 
@@ -116,13 +120,19 @@ newsportal/
 │   │   ├── auth.ts             # Server Actions (logout, changePasswordAction)
 │   │   ├── bookmark.ts         # Server Actions (toggleBookmarkAction)
 │   │   ├── profile.ts          # Server Actions (updateProfileAction)
-│   │   └── readingHistory.ts   # Server Actions (trackReadingHistoryAction, deleteReadingHistoryItemAction, clearReadingHistoryAction)
+│   │   ├── readingHistory.ts   # Server Actions (trackReadingHistoryAction, deleteReadingHistoryItemAction, clearReadingHistoryAction)
+│   │   └── users.ts            # Server Actions (updateUserRoleAction, setUserActiveAction) — ADMIN only, self-guard
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
 │   │   │   ├── articles/[id]/submit/route.ts  # PATCH: submit artikel ke review (JOURNALIST/EDITOR/ADMIN, own article)
 │   │   │   ├── articles/[id]/review/route.ts  # PATCH: approve/reject/schedule artikel (EDITOR/ADMIN only)
 │   │   │   ├── articles/[id]/override/route.ts # PATCH: override status ke nilai apapun (ADMIN only, FR-AM-09)
+│   │   │   ├── articles/[id]/feature/route.ts  # PATCH: toggle isFeatured (EDITOR/ADMIN, artikel harus PUBLISHED, FR-AM-11)
+│   │   │   ├── categories/route.ts             # GET (public) / POST (ADMIN): kelola kategori
+│   │   │   ├── categories/[id]/route.ts        # PATCH/DELETE (ADMIN): edit/hapus kategori (FR-CMS-04)
+│   │   │   ├── tags/route.ts                   # GET (public) / POST (ADMIN): kelola tag
+│   │   │   ├── tags/[id]/route.ts               # PATCH/DELETE (ADMIN): edit/hapus tag (FR-CMS-05)
 │   │   │   ├── cron/
 │   │   │   │   └── publish-scheduled/route.ts # GET: auto-publish SCHEDULED→PUBLISHED (auth: CRON_SECRET)
 │   │   │   └── auth/
@@ -181,9 +191,18 @@ newsportal/
 │   │   │   ├── analytics/
 │   │   │   │   ├── loading.tsx               # Skeleton: stat cards + tab filter + tabel
 │   │   │   │   └── page.tsx                  # Analytics (EDITOR/ADMIN; grafik pengguna hanya ADMIN)
-│   │   │   └── manage-articles/
-│   │   │       ├── page.tsx                  # Kelola semua artikel (EDITOR/ADMIN, FR-AM-09)
-│   │   │       └── OverrideActions.tsx       # Client: override status ke nilai apapun dengan Dialog
+│   │   │   ├── manage-articles/
+│   │   │   │   ├── page.tsx                  # Kelola semua artikel (EDITOR/ADMIN, FR-AM-09)
+│   │   │   │   └── OverrideActions.tsx       # Client: override status ke nilai apapun dengan Dialog
+│   │   │   ├── taxonomy/
+│   │   │   │   ├── page.tsx                  # Kelola kategori & tag (ADMIN, FR-CMS-03/04/05)
+│   │   │   │   ├── TaxonomyTabs.tsx          # Client: tab switcher kategori/tag + row list
+│   │   │   │   ├── TaxonomyForm.tsx          # Client: Dialog create/edit (auto-slug dari nama)
+│   │   │   │   └── DeleteTaxonomyButton.tsx  # Client: hapus dengan confirm + in-use guard
+│   │   │   └── users/
+│   │   │       ├── page.tsx                  # Kelola pengguna (ADMIN, FR-UM-03/04/05)
+│   │   │       ├── RoleSelect.tsx            # Client: ubah role inline
+│   │   │       └── SuspendToggle.tsx         # Client: aktifkan/nonaktifkan akun
 │   │   ├── search/page.tsx                    # Pencarian + filter
 │   │   ├── about/page.tsx
 │   │   ├── contact/page.tsx
@@ -239,20 +258,24 @@ newsportal/
 │   │   ├── auth.config.ts                     # Config NextAuth edge-safe (middleware)
 │   │   ├── bookmarks.ts                       # Query bookmark: getUserBookmarks, isArticleBookmarked
 │   │   ├── cms-articles.ts                    # Query CMS: getUserArticles, getArticleForEdit, getReviewQueue, getArticleForReview
+│   │   ├── pagination.ts                      # parsePage() — validasi & clamp integer ?page= ke [1, 100_000]
 │   │   ├── readingHistory.ts                  # Query riwayat baca: getUserReadingHistory
 │   │   ├── auth.ts                            # NextAuth setup + re-validasi JWT ke DB
 │   │   ├── authors.ts                         # Query penulis
-│   │   ├── categories.ts                      # Query kategori
+│   │   ├── categories.ts                      # Query kategori (+ getAllCategoriesWithCount untuk admin)
 │   │   ├── db.ts                              # Prisma client singleton
 │   │   ├── email.ts                           # Kirim email via Resend
 │   │   ├── rate-limit.ts                      # Rate limiter Upstash: getRateLimiter (5/15m), getSearchRateLimiter (30/1m)
 │   │   ├── sanitize.ts                        # Shared sanitize-html options (allowlist: defaults + img)
-│   │   ├── tags.ts                            # Query tag
+│   │   ├── tags.ts                            # Query tag (+ getAllTagsWithCount untuk admin)
+│   │   ├── users.ts                           # Query admin: getAllUsersAdmin (paginasi + filter role)
 │   │   └── utils.ts                           # Helper cn() untuk Tailwind
 │   ├── schemas/
 │   │   ├── article.ts                         # Zod schemas: articleSchema, saveDraftSchema
 │   │   ├── auth.ts                            # Zod schemas: login, register, reset password
-│   │   └── profile.ts                         # Zod schemas: profileSchema, changePasswordSchema
+│   │   ├── profile.ts                         # Zod schemas: profileSchema, changePasswordSchema
+│   │   ├── taxonomy.ts                        # Zod schemas: categorySchema, tagSchema
+│   │   └── users.ts                           # Zod schemas: updateUserRoleSchema, setUserActiveSchema
 │   ├── types/
 │   │   └── next-auth.d.ts                     # Augmentasi tipe NextAuth (id, role)
 │   └── middleware.ts                           # Proteksi route via NextAuth
@@ -390,6 +413,7 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `build` | `next build --turbopack` | Production build |
 | `start` | `next start` | Jalankan production server |
 | `lint` | `eslint` | Linting kode |
+| `typecheck` | `tsc --noEmit` | Type-check TypeScript tanpa emit output |
 | `migrate` | `prisma migrate deploy` | Apply semua pending migration ke database |
 | `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh (artikel, kategori, tag) ke database |
 | `db:seed:test` | `npx tsx prisma/seed-test-accounts.ts` | Buat 4 akun test (USER/JOURNALIST/EDITOR/ADMIN) — butuh `ALLOW_TEST_SEED=true` di `.env` |
@@ -444,6 +468,12 @@ Buka [http://localhost:3000](http://localhost:3000)
 |--------|------------|
 | `getUserReadingHistory(userId, page, perPage?)` | Semua riwayat baca milik user, urut readAt DESC, default 12/halaman; `upsert` di sisi action memastikan setiap artikel hanya muncul sekali |
 
+### Query Admin (`src/lib/users.ts`)
+
+| Fungsi | Keterangan |
+|--------|------------|
+| `getAllUsersAdmin(page, perPage?, role?)` | Semua pengguna, urut createdAt DESC, default 20/halaman, opsional filter role |
+
 ---
 
 ## Proteksi Route
@@ -454,6 +484,7 @@ Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
 |-------|-------|
 | `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | Semua role yang sudah login |
 | `/dashboard/manage-articles` | ADMIN only (page-level guard via `auth()`) |
+| `/dashboard/taxonomy`, `/dashboard/users` | ADMIN only (page-level guard via `auth()`) |
 | `/dashboard/*` lainnya | Login + role bukan USER (JOURNALIST/EDITOR/ADMIN) |
 | `/login`, `/register` | Redirect ke `/` jika sudah login (dicek di page-level via `auth()`) |
 | Semua route lain | Publik |
@@ -472,18 +503,3 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 
 - **Heading:** Newsreader (Google Fonts, serif) — weight `600` dan `700` saja (normal); variant lain tidak di-preload untuk hemat bandwidth
 - **Body:** Roboto (Google Fonts, sans-serif) — weight `400`, `500`, `700`
-
----
-
-## Status Implementasi
-
-| Phase | Fitur | Status |
-|-------|-------|--------|
-| Phase 1 | Project Setup & Foundation | Selesai |
-| Phase 2 | Public News Website | Selesai |
-| Phase 3 | Authentication & User Features | Selesai |
-| Phase 4 | CMS Dashboard | Selesai |
-| Phase 5 | Editorial Workflow | Selesai |
-| Phase 6 | Analytics Dashboard | Sebagian selesai (FR-AN-01 summary stats + FR-AN-02 Top 10 per periode selesai; FR-AN-03 new-user chart belum) |
-| Phase 7 | SEO Optimization | Selesai (robots, sitemap, JSON-LD, OG, llms.txt — diverifikasi via Lighthouse + browser + schema validation) |
-| Phase 8 | Production Ready | Sebagian selesai (security headers CSP+HSTS, Vercel Analytics, email error handling, migration, portfolio disclaimer di footer + /about) |

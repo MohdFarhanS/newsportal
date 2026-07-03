@@ -23,3 +23,10 @@ export async function getAllCategories() {
     select: { id: true, name: true, slug: true },
   })
 }
+
+export async function getAllCategoriesWithCount() {
+  return db.category.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { articles: true } } },
+  })
+}
