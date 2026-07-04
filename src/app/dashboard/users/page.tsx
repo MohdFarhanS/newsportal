@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns"
 import { id as localeId } from "date-fns/locale"
 import type { Role } from "@/generated/prisma/client"
 import Pagination from "@/components/layout/Pagination"
+import { parsePage } from "@/lib/pagination"
 import RoleSelect from "./RoleSelect"
 import SuspendToggle from "./SuspendToggle"
 
@@ -28,7 +29,7 @@ export default async function ManageUsersPage({
   if (session.user.role !== "ADMIN") redirect("/dashboard")
 
   const { page: pageParam, role: roleParam } = await searchParams
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
+  const page = parsePage(pageParam)
   const role = isValidRole(roleParam) ? roleParam : undefined
 
   const { users, total, totalPages } = await getAllUsersAdmin(page, 20, role)

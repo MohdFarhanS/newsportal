@@ -24,7 +24,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 | Analytics | Vercel Analytics |
 | Sanitasi HTML | sanitize-html (save-time + display-time, allowlist-based) |
 | E2E Testing | Playwright (`@playwright/test`) — auth, RBAC, editorial workflow, taxonomy, users, responsiveness, search, bookmark/history |
-| A11y Testing | `@axe-core/playwright` — runtime WCAG 2.1 AA scan integrated into the Playwright suite |
+| A11y Testing | `@axe-core/playwright` — pemindaian WCAG 2.1 AA saat runtime, terintegrasi ke dalam Playwright suite |
 
 ---
 
@@ -71,16 +71,16 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 - **Submit for Review** — Jurnalis submit artikel DRAFT/REJECTED ke editor; field wajib divalidasi sebelum submit
 - **Review Queue** (`/dashboard/review`) — Editor/Admin melihat semua artikel berstatus REVIEW dalam urutan FIFO; filter per kategori + paginasi
 - **Approve** — Editor publish artikel dari antrian melalui dialog konfirmasi; `publishedAt` diset otomatis, public pages di-revalidate
-- **Jadwalkan** — Editor atur waktu publikasi otomatis (harus di masa depan, lokal timezone); artikel masuk status `SCHEDULED` dan tidak muncul di halaman publik sampai waktu tercapai; **Vercel Cron** (setiap hari tengah malam via `vercel.json`) auto-publish SCHEDULED → PUBLISHED dan revalidate semua public pages
+- **Jadwalkan** — Editor mengatur waktu publikasi otomatis (harus di masa depan, mengikuti timezone lokal). Artikel berstatus `SCHEDULED` dan belum muncul di halaman publik sampai waktunya tiba. **Vercel Cron** (berjalan tiap tengah malam via `vercel.json`) otomatis mengubah status SCHEDULED → PUBLISHED dan me-revalidate semua halaman publik
 - **Reject** — Editor tolak dengan catatan wajib (maks 2000 karakter); catatan ditampilkan ke jurnalis di halaman edit
 - TOCTOU guard via `updateMany` — jika dua editor mereview artikel yang sama secara bersamaan, yang kedua mendapat 409 Conflict
 - **Admin Override** (`/dashboard/manage-articles`) — Admin bisa mengubah status artikel ke status apapun tanpa batasan alur editorial; `publishedAt` selalu di-clear saat demote dan diset ulang saat promote ke PUBLISHED; public pages di-revalidate otomatis
-- **Toggle Featured** (`/dashboard/manage-articles`) — Editor/Admin menandai artikel PUBLISHED sebagai featured (★/☆); homepage menampilkan maks 3 artikel featured via `getFeaturedArticles({ take: 3 })`; revalidate homepage + artikel page otomatis; EDITOR hanya melihat Featured toggle, ADMIN melihat Featured toggle + Override
+- **Toggle Featured** (`/dashboard/manage-articles`) — Editor/Admin menandai artikel PUBLISHED sebagai featured (★/☆). Homepage menampilkan maksimal 3 artikel featured (`getFeaturedArticles({ take: 3 })`), dan homepage + halaman artikel otomatis di-revalidate setelahnya. EDITOR hanya melihat tombol Featured toggle, sedangkan ADMIN melihat Featured toggle + Override
 
 ### Analytics Dashboard *(EDITOR & ADMIN)*
 - **Summary stats** — Total artikel, artikel published, total views (cache 60s, revalidate on publish/override)
 - **Top 10 artikel per periode** — Ranking berdasarkan jumlah view dari `article_views` (7 hari / 30 hari / semua waktu); tab filter via URL `?range=`; tabel responsif (Kategori hidden <sm, Penulis hidden <md)
-- **Grafik pengguna baru per minggu** *(ADMIN only)* — Pure CSS bar chart tanpa library eksternal; 12 minggu terakhir; week boundaries menggunakan timezone WIB (UTC+7) agar Senin 00:00 WIB menjadi batas periode; hover tooltip menampilkan jumlah; x-axis label tiap 3 minggu; cache 3600s
+- **Grafik pengguna baru per minggu** *(ADMIN only)* — Bar chart berbasis CSS murni (tanpa library eksternal) untuk 12 minggu terakhir. Batas minggu memakai timezone WIB (UTC+7) sehingga Senin 00:00 WIB menjadi awal periode; hover pada bar menampilkan jumlah, label sumbu-x muncul tiap 3 minggu, dan data di-cache selama 3600 detik
 
 ### SEO
 - `robots.txt` dinamis — Allow `/`, Disallow `/dashboard/`, `/api/`
@@ -108,11 +108,11 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 newsportal/
 ├── e2e/                      # Playwright E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history)
 │   ├── auth.setup.ts         # "setup" project: login × 4 role, simpan storageState
-│   ├── auth.spec.ts          # Register, login, logout, FR-AUTH-05, FR-AUTH-07
+│   ├── auth.spec.ts          # Register, login, logout, rate limiting, invalidasi sesi saat suspend
 │   ├── rbac.spec.ts          # Matriks akses per role × route, ownership check
 │   ├── editorial-workflow.spec.ts  # Create→submit→approve/reject/schedule, TOCTOU, override, featured
-│   ├── taxonomy.spec.ts       # Category/Tag CRUD, cascade-delete guard (FR-CMS-03/04/05)
-│   ├── users.spec.ts          # Role/suspend management, self-guard (FR-UM-03/04/05)
+│   ├── taxonomy.spec.ts       # Category/Tag CRUD, cascade-delete guard
+│   ├── users.spec.ts          # Role/suspend management, self-guard
 │   ├── accessibility.spec.ts  # axe-core WCAG 2.1 AA runtime scan, seluruh route publik+dashboard
 │   ├── responsiveness.spec.ts # Overflow sweep, nav-toggle, column-hide, reflow checks @ 375/768/1024px
 │   ├── search.spec.ts         # Text search, filter combinability, pagination+filter, page fallback
@@ -147,12 +147,12 @@ newsportal/
 │   │   │   ├── articles/route.ts              # GET: search + filter artikel
 │   │   │   ├── articles/[id]/submit/route.ts  # PATCH: submit artikel ke review (JOURNALIST/EDITOR/ADMIN, own article)
 │   │   │   ├── articles/[id]/review/route.ts  # PATCH: approve/reject/schedule artikel (EDITOR/ADMIN only)
-│   │   │   ├── articles/[id]/override/route.ts # PATCH: override status ke nilai apapun (ADMIN only, FR-AM-09)
-│   │   │   ├── articles/[id]/feature/route.ts  # PATCH: toggle isFeatured (EDITOR/ADMIN, artikel harus PUBLISHED, FR-AM-11)
+│   │   │   ├── articles/[id]/override/route.ts # PATCH: override status ke nilai apapun (ADMIN only)
+│   │   │   ├── articles/[id]/feature/route.ts  # PATCH: toggle isFeatured (EDITOR/ADMIN, artikel harus PUBLISHED)
 │   │   │   ├── categories/route.ts             # GET (public) / POST (ADMIN): kelola kategori
-│   │   │   ├── categories/[id]/route.ts        # PATCH/DELETE (ADMIN): edit/hapus kategori (FR-CMS-04)
+│   │   │   ├── categories/[id]/route.ts        # PATCH/DELETE (ADMIN): edit/hapus kategori
 │   │   │   ├── tags/route.ts                   # GET (public) / POST (ADMIN): kelola tag
-│   │   │   ├── tags/[id]/route.ts               # PATCH/DELETE (ADMIN): edit/hapus tag (FR-CMS-05)
+│   │   │   ├── tags/[id]/route.ts               # PATCH/DELETE (ADMIN): edit/hapus tag
 │   │   │   ├── cron/
 │   │   │   │   └── publish-scheduled/route.ts # GET: auto-publish SCHEDULED→PUBLISHED (auth: CRON_SECRET)
 │   │   │   └── auth/
@@ -190,37 +190,37 @@ newsportal/
 │   │   │   ├── layout.tsx                    # Sidebar + auth guard
 │   │   │   ├── loading.tsx                   # Skeleton: konten area (sidebar tetap visible)
 │   │   │   ├── page.tsx                      # Overview
-│   │   │   ├── bookmarks/page.tsx            # Daftar bookmark user (FR-BM-03)
+│   │   │   ├── bookmarks/page.tsx            # Daftar bookmark user
 │   │   │   ├── history/
 │   │   │   │   ├── ClearHistoryButton.tsx    # Client: hapus semua riwayat (useTransition + toast + aria-busy)
 │   │   │   │   ├── DeleteHistoryItemButton.tsx  # Client: hapus satu item (useTransition + toast + aria-busy)
-│   │   │   │   └── page.tsx                  # Daftar riwayat baca (FR-RH-01, FR-RH-02)
-│   │   │   ├── profile/page.tsx              # FR-UM-01
-│   │   │   ├── security/page.tsx             # FR-UM-02
+│   │   │   │   └── page.tsx                  # Daftar riwayat baca
+│   │   │   ├── profile/page.tsx              # Edit profil pengguna
+│   │   │   ├── security/page.tsx             # Ganti password
 │   │   │   ├── articles/
 │   │   │   │   ├── page.tsx                  # Daftar artikel milik user
-│   │   │   │   ├── new/page.tsx              # Tulis artikel baru (FR-AM-01)
-│   │   │   │   └── [id]/edit/page.tsx        # Edit artikel (FR-AM-10)
+│   │   │   │   ├── new/page.tsx              # Tulis artikel baru
+│   │   │   │   └── [id]/edit/page.tsx        # Edit artikel
 │   │   │   ├── review/
 │   │   │   │   ├── loading.tsx               # Skeleton: review queue list
-│   │   │   │   ├── page.tsx                  # Antrian review (EDITOR/ADMIN, FR-AM-06)
+│   │   │   │   ├── page.tsx                  # Antrian review (EDITOR/ADMIN)
 │   │   │   │   └── [id]/
 │   │   │   │       ├── loading.tsx           # Skeleton: review detail
-│   │   │   │       ├── page.tsx              # Detail artikel untuk review (FR-AM-07)
+│   │   │   │       ├── page.tsx              # Detail artikel untuk review
 │   │   │   │       └── ReviewActions.tsx     # Client: approve/jadwalkan/reject dengan Shadcn Dialog
 │   │   │   ├── analytics/
 │   │   │   │   ├── loading.tsx               # Skeleton: stat cards + tab filter + tabel
 │   │   │   │   └── page.tsx                  # Analytics (EDITOR/ADMIN; grafik pengguna hanya ADMIN)
 │   │   │   ├── manage-articles/
-│   │   │   │   ├── page.tsx                  # Kelola semua artikel (EDITOR/ADMIN, FR-AM-09)
+│   │   │   │   ├── page.tsx                  # Kelola semua artikel (EDITOR/ADMIN)
 │   │   │   │   └── OverrideActions.tsx       # Client: override status ke nilai apapun dengan Dialog
 │   │   │   ├── taxonomy/
-│   │   │   │   ├── page.tsx                  # Kelola kategori & tag (ADMIN, FR-CMS-03/04/05)
+│   │   │   │   ├── page.tsx                  # Kelola kategori & tag (ADMIN)
 │   │   │   │   ├── TaxonomyTabs.tsx          # Client: tab switcher kategori/tag + row list
 │   │   │   │   ├── TaxonomyForm.tsx          # Client: Dialog create/edit (auto-slug dari nama)
 │   │   │   │   └── DeleteTaxonomyButton.tsx  # Client: hapus dengan confirm + in-use guard
 │   │   │   └── users/
-│   │   │       ├── page.tsx                  # Kelola pengguna (ADMIN, FR-UM-03/04/05)
+│   │   │       ├── page.tsx                  # Kelola pengguna (ADMIN)
 │   │   │       ├── RoleSelect.tsx            # Client: ubah role inline
 │   │   │       └── SuspendToggle.tsx         # Client: aktifkan/nonaktifkan akun
 │   │   ├── search/page.tsx                    # Pencarian + filter
@@ -374,7 +374,7 @@ AUTH_SECRET="your-secret-key-min-32-chars"
 UPSTASH_REDIS_REST_URL="https://your-url.upstash.io"
 UPSTASH_REDIS_REST_TOKEN="your-token"
 
-# Cloudinary (avatar upload Phase 3, cover image Phase 4)
+# Cloudinary (upload avatar & cover image artikel)
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
@@ -510,7 +510,7 @@ Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
 | Route | Akses |
 |-------|-------|
 | `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | Semua role yang sudah login |
-| `/dashboard/manage-articles` | ADMIN only (page-level guard via `auth()`) |
+| `/dashboard/manage-articles` | EDITOR & ADMIN (page-level guard via `auth()`) |
 | `/dashboard/taxonomy`, `/dashboard/users` | ADMIN only (page-level guard via `auth()`) |
 | `/dashboard/*` lainnya | Login + role bukan USER (JOURNALIST/EDITOR/ADMIN) |
 | `/login`, `/register` | Redirect ke `/` jika sudah login (dicek di page-level via `auth()`) |
@@ -528,16 +528,16 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 
 ## E2E Testing
 
-Playwright E2E suite (`e2e/`) mencakup sembilan area kritis: **Authentication**, **RBAC**, **Editorial Workflow**, **Category/Tag Management** (FR-CMS-03/04/05), **User Management** (FR-UM-03/04/05), **Accessibility** (axe-core runtime scan), **Responsiveness** (overflow/nav-toggle/column-hide/reflow @ 375/768/1024px), **Search & Filtering** (FR-SRCH-01/02/03, FR-PW-05/06), dan **Bookmark & Reading History** (FR-BM-01/02/03, FR-RH-01/02) — cakupan sengaja dibatasi (bukan menyeluruh) sesuai prinsip anti-over-engineering PRD §25. Total **219 test** (218/219 passed pada full run terakhir — 1 flake transien di `users.spec.ts`, tidak terkait perubahan bookmark/history, lihat CLAUDE.md).
+Playwright E2E suite (`e2e/`) mencakup sembilan area kritis: **Authentication**, **RBAC**, **Editorial Workflow**, **Category/Tag Management**, **User Management**, **Accessibility** (axe-core runtime scan), **Responsiveness** (overflow/nav-toggle/column-hide/reflow @ 375/768/1024px), **Search & Filtering**, dan **Bookmark & Reading History**. Cakupan sengaja dibatasi ke area-area berisiko tinggi, bukan menyeluruh ke seluruh aplikasi. Total **219 test, semuanya passed** (sempat ada 1 kegagalan tidak konsisten di `users.spec.ts` akibat ketidaksesuaian data akun admin di database development — sudah diperbaiki).
 
 - **Prasyarat**: `npm run dev` harus sudah berjalan di port 3000 sebelum `npm run test:e2e` (config `reuseExistingServer` — tidak membuka dev server baru jika sudah ada; suite tidak dijalankan sendiri oleh AI, harus dipicu manual oleh user).
 - **Target database**: Neon branch `dev` (sama dengan `DATABASE_URL` lokal). Semua data dibuat test bersifat throwaway (email `e2e-*@test.newsportal.local`, judul artikel `[E2E] ...`, nama kategori/tag `[E2E]...`) dan dihapus otomatis (`afterEach`/`finally` + `global-teardown.ts` sebagai safety net). Akun test tetap (`farhan@newsportal{admin,editor,journalist,user}.com`) dipakai read-only, tidak pernah dimutasi role/password/isActive.
 - **Rate limiting**: Upstash rate limiter aktif di `.env` lokal (`getRateLimiter()` 5 req/15 menit dipakai register + forgot/reset-password) — `auth.spec.ts` memakai ~4 dari 5 slot dalam satu run bersih. Jangan jalankan `auth.spec.ts` berulang dalam 15 menit, dan hindari testing login/register manual di browser bersamaan dengan suite berjalan.
 - **Accessibility**: `accessibility.spec.ts` men-scan seluruh route publik + dashboard (per role) via `@axe-core/playwright`, WCAG 2.1 AA. `color-contrast` dipisah jadi pass report-only sendiri (tidak pernah fail assertion); rule lain dengan impact `critical`/`serious` men-fail test, `moderate`/`minor` dicatat di test report tanpa men-fail. Jalankan `npm run test:a11y` untuk scan terisolasi.
-- **Responsiveness**: `responsiveness.spec.ts` mengecek horizontal-overflow di seluruh route inventory pada 3 breakpoint (375/768/1024px, sesuai breakpoint manual-QA proyek), plus regression test khusus untuk bug nyata `dashboard/users` grid→flex (presisi boundary 1023/1024px), nav-toggle Navbar/DashboardNav/FilterPanel (presisi boundary 767/768px), column-hide `dashboard/analytics`/`dashboard/review`, dan reflow `FeaturedSection`/homepage/`Pagination`. Menemukan &amp; memperbaiki 1 bug overflow nyata di `/dashboard/review/[id]` (tombol aksi tidak wrap di 375px). Jalankan `npm run test:responsive` untuk scan terisolasi.
+- **Responsiveness**: `responsiveness.spec.ts` mengecek horizontal-overflow di seluruh route inventory pada 3 breakpoint (375/768/1024px, sesuai breakpoint manual-QA proyek), plus regression test khusus untuk bug nyata `dashboard/users` grid→flex (presisi boundary 1023/1024px), nav-toggle Navbar/DashboardNav/FilterPanel (presisi boundary 767/768px), column-hide `dashboard/analytics`/`dashboard/review`, dan reflow `FeaturedSection`/homepage/`Pagination`. Menemukan & memperbaiki 1 bug overflow nyata di `/dashboard/review/[id]` (tombol aksi tidak wrap di 375px). Jalankan `npm run test:responsive` untuk scan terisolasi.
 - **Search & Filtering**: `search.spec.ts` menutup gap fungsional publik (text search debounce 300ms, kombinabilitas filter kategori/tag/date-preset, pagination dengan filter aktif, fallback `page` invalid/out-of-range, 2 varian teks empty-state, kontrak publik `GET /api/articles`). Rate limiter `getSearchRateLimiter()` (30 req/menit per-IP) di-isolasi per describe block via header `x-forwarded-for` palsu (`withFakeIp()` helper) — tanpa ini, volume request kumulatif satu file bisa melebihi 30/menit karena Playwright tidak mengirim IP unik per request. Jalankan `npm run test:search` untuk scan terisolasi.
-- **Bookmark & Reading History**: `bookmark-history.spec.ts` menutup gap fungsional dashboard (toggle bookmark on/off, auto-track riwayat baca, delete-per-item, "Hapus Semua" via native `confirm()`, empty state, pagination, fallback `?page=` invalid). Menemukan &amp; memperbaiki bug kode nyata: `dashboard/bookmarks` dan `dashboard/history` ternyata belum pakai `parsePage()` (pola lama `parseInt` manual) — sudah diperbaiki untuk kedua halaman ini; 3 halaman dashboard lain (`review`, `manage-articles`, `users`) punya pola yang sama tapi sengaja dibiarkan sebagai known gap (lihat CLAUDE.md). Jalankan `npm run test:bookmark-history` untuk scan terisolasi.
-- **Di luar cakupan** (sengaja tidak dites di sini): SEO, Analytics Dashboard — sudah diverifikasi manual sesi-sesi sebelumnya, atau direncanakan test terpisah.
+- **Bookmark & Reading History**: `bookmark-history.spec.ts` menutup gap fungsional dashboard (toggle bookmark on/off, auto-track riwayat baca, delete-per-item, "Hapus Semua" via native `confirm()`, empty state, pagination, fallback `?page=` invalid). Menemukan & memperbaiki bug kode nyata: 5 halaman dashboard berpaginasi (`bookmarks`, `history`, `review`, `manage-articles`, `users`) ternyata belum pakai `parsePage()` dan masih memakai pola lama `parseInt` manual — semua sudah diperbaiki. Jalankan `npm run test:bookmark-history` untuk scan terisolasi.
+- **Di luar cakupan** (sengaja tidak dites di sini): SEO dan Analytics Dashboard — keduanya sudah diverifikasi secara manual dan direncanakan mendapat test otomatis terpisah di kemudian hari.
 
 ---
 
