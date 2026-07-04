@@ -47,6 +47,7 @@ export default async function ReviewQueuePage({
       <form method="GET" className="mb-6 flex items-center gap-2">
         <select
           name="category"
+          aria-label="Filter kategori"
           defaultValue={category ?? ""}
           className="text-sm border border-zinc-200 rounded px-2 py-1.5 text-zinc-700 bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
         >

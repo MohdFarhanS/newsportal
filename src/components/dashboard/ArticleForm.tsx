@@ -149,8 +149,9 @@ export default function ArticleForm({ initialData, categories, tags }: Props) {
       {/* Category + Tags row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <label className={LABEL}>Kategori *</label>
+          <label className={LABEL} htmlFor="categoryId">Kategori *</label>
           <select
+            id="categoryId"
             {...register("categoryId")}
             disabled={!canEdit}
             className={INPUT}

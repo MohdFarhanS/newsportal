@@ -23,6 +23,8 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 | Data Fetching | TanStack Query v5 |
 | Analytics | Vercel Analytics |
 | Sanitasi HTML | sanitize-html (save-time + display-time, allowlist-based) |
+| E2E Testing | Playwright (`@playwright/test`) — auth, RBAC, editorial workflow, taxonomy, users, responsiveness, search, bookmark/history |
+| A11y Testing | `@axe-core/playwright` — runtime WCAG 2.1 AA scan integrated into the Playwright suite |
 
 ---
 
@@ -104,6 +106,24 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 
 ```
 newsportal/
+├── e2e/                      # Playwright E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history)
+│   ├── auth.setup.ts         # "setup" project: login × 4 role, simpan storageState
+│   ├── auth.spec.ts          # Register, login, logout, FR-AUTH-05, FR-AUTH-07
+│   ├── rbac.spec.ts          # Matriks akses per role × route, ownership check
+│   ├── editorial-workflow.spec.ts  # Create→submit→approve/reject/schedule, TOCTOU, override, featured
+│   ├── taxonomy.spec.ts       # Category/Tag CRUD, cascade-delete guard (FR-CMS-03/04/05)
+│   ├── users.spec.ts          # Role/suspend management, self-guard (FR-UM-03/04/05)
+│   ├── accessibility.spec.ts  # axe-core WCAG 2.1 AA runtime scan, seluruh route publik+dashboard
+│   ├── responsiveness.spec.ts # Overflow sweep, nav-toggle, column-hide, reflow checks @ 375/768/1024px
+│   ├── search.spec.ts         # Text search, filter combinability, pagination+filter, page fallback
+│   ├── bookmark-history.spec.ts # Bookmark toggle, auto-track riwayat baca, delete/clear-all, pagination
+│   ├── .auth/                # storageState JSON hasil login (gitignored)
+│   └── utils/
+│       ├── db.ts              # pg.Client raw SQL (bukan Prisma — generated client ESM-only): seed/cleanup throwaway user & artikel
+│       ├── ids.ts              # newRunId(), penamaan email/judul throwaway (prefix e2e-/[E2E])
+│       ├── a11y.ts             # Helper AxeBuilder (settle, scanForViolations, splitByImpact, formatViolations)
+│       ├── responsive.ts       # BREAKPOINTS (375/768/1024px + boundary pairs), hasHorizontalOverflow()
+│       └── global-teardown.ts # Sapu bersih data throwaway sisa setelah test run
 ├── prisma/
 │   ├── migrations/          # Riwayat migrasi database
 │   ├── schema.prisma        # Definisi skema database
@@ -281,6 +301,7 @@ newsportal/
 │   └── middleware.ts                           # Proteksi route via NextAuth
 ├── components.json          # Konfigurasi Shadcn/ui
 ├── next.config.ts           # Konfigurasi Next.js (Cloudinary remote pattern, security headers)
+├── playwright.config.ts     # Konfigurasi Playwright E2E (webServer reuse port 3000, storageState per role)
 ├── prisma.config.ts         # Konfigurasi Prisma
 ├── tsconfig.json            # Konfigurasi TypeScript
 └── vercel.json              # Vercel Cron jobs (publish-scheduled, hourly)
@@ -418,6 +439,12 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh (artikel, kategori, tag) ke database |
 | `db:seed:test` | `npx tsx prisma/seed-test-accounts.ts` | Buat 4 akun test (USER/JOURNALIST/EDITOR/ADMIN) — butuh `ALLOW_TEST_SEED=true` di `.env` |
 | `db:seed:admin` | `npx tsx prisma/seed-admin.ts` | Buat/update akun admin dari env vars — aman untuk production |
+| `test:e2e` | `playwright test` | Jalankan E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history) — butuh `npm run dev` di port 3000 sudah berjalan |
+| `test:e2e:ui` | `playwright test --ui` | Jalankan E2E test suite dengan Playwright UI mode (debugging) |
+| `test:a11y` | `playwright test accessibility.spec.ts` | Jalankan hanya test accessibility (axe-core) secara terisolasi |
+| `test:responsive` | `playwright test responsiveness.spec.ts` | Jalankan hanya test responsiveness (overflow/nav-toggle/column-hide/reflow) secara terisolasi |
+| `test:search` | `playwright test search.spec.ts` | Jalankan hanya test search & filtering (text search, kombinabilitas filter, pagination) secara terisolasi |
+| `test:bookmark-history` | `playwright test bookmark-history.spec.ts` | Jalankan hanya test bookmark & reading history secara terisolasi |
 
 ---
 
@@ -496,6 +523,21 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 > **Penting:** Guard untuk auth pages (`/login`, `/register`) **tidak** ada di middleware karena middleware tidak bisa query DB — stale JWT cookie bisa menyebabkan false positive. Guard diimplementasi di page-level menggunakan `auth()` dari `auth.ts` yang DB-validated.
 >
 > **USER route matching** menggunakan **exact match** (bukan `startsWith`) agar `/dashboard/profile-evil` tidak lolos whitelist karena ada `/dashboard/profile` di daftar yang diizinkan.
+
+---
+
+## E2E Testing
+
+Playwright E2E suite (`e2e/`) mencakup sembilan area kritis: **Authentication**, **RBAC**, **Editorial Workflow**, **Category/Tag Management** (FR-CMS-03/04/05), **User Management** (FR-UM-03/04/05), **Accessibility** (axe-core runtime scan), **Responsiveness** (overflow/nav-toggle/column-hide/reflow @ 375/768/1024px), **Search & Filtering** (FR-SRCH-01/02/03, FR-PW-05/06), dan **Bookmark & Reading History** (FR-BM-01/02/03, FR-RH-01/02) — cakupan sengaja dibatasi (bukan menyeluruh) sesuai prinsip anti-over-engineering PRD §25. Total **219 test** (218/219 passed pada full run terakhir — 1 flake transien di `users.spec.ts`, tidak terkait perubahan bookmark/history, lihat CLAUDE.md).
+
+- **Prasyarat**: `npm run dev` harus sudah berjalan di port 3000 sebelum `npm run test:e2e` (config `reuseExistingServer` — tidak membuka dev server baru jika sudah ada; suite tidak dijalankan sendiri oleh AI, harus dipicu manual oleh user).
+- **Target database**: Neon branch `dev` (sama dengan `DATABASE_URL` lokal). Semua data dibuat test bersifat throwaway (email `e2e-*@test.newsportal.local`, judul artikel `[E2E] ...`, nama kategori/tag `[E2E]...`) dan dihapus otomatis (`afterEach`/`finally` + `global-teardown.ts` sebagai safety net). Akun test tetap (`farhan@newsportal{admin,editor,journalist,user}.com`) dipakai read-only, tidak pernah dimutasi role/password/isActive.
+- **Rate limiting**: Upstash rate limiter aktif di `.env` lokal (`getRateLimiter()` 5 req/15 menit dipakai register + forgot/reset-password) — `auth.spec.ts` memakai ~4 dari 5 slot dalam satu run bersih. Jangan jalankan `auth.spec.ts` berulang dalam 15 menit, dan hindari testing login/register manual di browser bersamaan dengan suite berjalan.
+- **Accessibility**: `accessibility.spec.ts` men-scan seluruh route publik + dashboard (per role) via `@axe-core/playwright`, WCAG 2.1 AA. `color-contrast` dipisah jadi pass report-only sendiri (tidak pernah fail assertion); rule lain dengan impact `critical`/`serious` men-fail test, `moderate`/`minor` dicatat di test report tanpa men-fail. Jalankan `npm run test:a11y` untuk scan terisolasi.
+- **Responsiveness**: `responsiveness.spec.ts` mengecek horizontal-overflow di seluruh route inventory pada 3 breakpoint (375/768/1024px, sesuai breakpoint manual-QA proyek), plus regression test khusus untuk bug nyata `dashboard/users` grid→flex (presisi boundary 1023/1024px), nav-toggle Navbar/DashboardNav/FilterPanel (presisi boundary 767/768px), column-hide `dashboard/analytics`/`dashboard/review`, dan reflow `FeaturedSection`/homepage/`Pagination`. Menemukan &amp; memperbaiki 1 bug overflow nyata di `/dashboard/review/[id]` (tombol aksi tidak wrap di 375px). Jalankan `npm run test:responsive` untuk scan terisolasi.
+- **Search & Filtering**: `search.spec.ts` menutup gap fungsional publik (text search debounce 300ms, kombinabilitas filter kategori/tag/date-preset, pagination dengan filter aktif, fallback `page` invalid/out-of-range, 2 varian teks empty-state, kontrak publik `GET /api/articles`). Rate limiter `getSearchRateLimiter()` (30 req/menit per-IP) di-isolasi per describe block via header `x-forwarded-for` palsu (`withFakeIp()` helper) — tanpa ini, volume request kumulatif satu file bisa melebihi 30/menit karena Playwright tidak mengirim IP unik per request. Jalankan `npm run test:search` untuk scan terisolasi.
+- **Bookmark & Reading History**: `bookmark-history.spec.ts` menutup gap fungsional dashboard (toggle bookmark on/off, auto-track riwayat baca, delete-per-item, "Hapus Semua" via native `confirm()`, empty state, pagination, fallback `?page=` invalid). Menemukan &amp; memperbaiki bug kode nyata: `dashboard/bookmarks` dan `dashboard/history` ternyata belum pakai `parsePage()` (pola lama `parseInt` manual) — sudah diperbaiki untuk kedua halaman ini; 3 halaman dashboard lain (`review`, `manage-articles`, `users`) punya pola yang sama tapi sengaja dibiarkan sebagai known gap (lihat CLAUDE.md). Jalankan `npm run test:bookmark-history` untuk scan terisolasi.
+- **Di luar cakupan** (sengaja tidak dites di sini): SEO, Analytics Dashboard — sudah diverifikasi manual sesi-sesi sebelumnya, atau direncanakan test terpisah.
 
 ---
 

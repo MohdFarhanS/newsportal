@@ -50,7 +50,9 @@ export default async function ManageUsersPage({
 
       <form method="GET" className="mb-6 flex items-center gap-2">
         <select
+          key={role ?? "all"}
           name="role"
+          aria-label="Filter role"
           defaultValue={role ?? ""}
           className="text-sm border border-zinc-200 rounded px-2 py-1.5 text-zinc-700 bg-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
         >
