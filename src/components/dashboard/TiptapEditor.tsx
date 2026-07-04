@@ -17,16 +17,19 @@ function ToolbarButton({
   onClick,
   active,
   disabled,
+  label,
   children,
 }: {
   onClick: () => void
   active?: boolean
   disabled?: boolean
+  label: string
   children: React.ReactNode
 }) {
   return (
     <button
       type="button"
+      aria-label={label}
       onMouseDown={(e) => {
         e.preventDefault()
         onClick()
@@ -55,6 +58,9 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
+    editorProps: {
+      attributes: { role: "textbox", "aria-multiline": "true", "aria-label": "Konten artikel" },
+    },
   })
 
   const setLink = () => {
@@ -77,6 +83,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive("bold")}
             disabled={disabled}
+            label="Tebal"
           >
             <Bold size={14} />
           </ToolbarButton>
@@ -84,6 +91,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={() => editor.chain().focus().toggleItalic().run()}
             active={editor.isActive("italic")}
             disabled={disabled}
+            label="Miring"
           >
             <Italic size={14} />
           </ToolbarButton>
@@ -91,6 +99,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             active={editor.isActive("heading", { level: 2 })}
             disabled={disabled}
+            label="Judul Bagian 2"
           >
             <Heading2 size={14} />
           </ToolbarButton>
@@ -98,6 +107,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             active={editor.isActive("heading", { level: 3 })}
             disabled={disabled}
+            label="Judul Bagian 3"
           >
             <Heading3 size={14} />
           </ToolbarButton>
@@ -105,6 +115,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive("bulletList")}
             disabled={disabled}
+            label="Daftar Poin"
           >
             <List size={14} />
           </ToolbarButton>
@@ -112,6 +123,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             active={editor.isActive("orderedList")}
             disabled={disabled}
+            label="Daftar Bernomor"
           >
             <ListOrdered size={14} />
           </ToolbarButton>
@@ -119,6 +131,7 @@ export default function TiptapEditor({ value, onChange, disabled }: Props) {
             onClick={setLink}
             active={editor.isActive("link")}
             disabled={disabled}
+            label="Tautan"
           >
             <Link2 size={14} />
           </ToolbarButton>

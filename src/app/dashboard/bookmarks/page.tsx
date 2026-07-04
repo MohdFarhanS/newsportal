@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { getUserBookmarks } from "@/lib/bookmarks"
 import { HorizontalCard } from "@/components/news/ArticleCard"
 import Pagination from "@/components/layout/Pagination"
+import { parsePage } from "@/lib/pagination"
 import type { ArticleWithRelations } from "@/lib/articles"
 
 export const metadata: Metadata = { title: "Bookmark Saya" }
@@ -18,7 +19,7 @@ export default async function BookmarksPage({ searchParams }: Props) {
   if (!session?.user?.id) redirect("/login")
 
   const { page: pageParam } = await searchParams
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
+  const page = parsePage(pageParam)
 
   const { bookmarks, totalPages } = await getUserBookmarks(session.user.id, page)
 

@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { getUserReadingHistory } from "@/lib/readingHistory"
 import { HorizontalCard } from "@/components/news/ArticleCard"
 import Pagination from "@/components/layout/Pagination"
+import { parsePage } from "@/lib/pagination"
 import { ClearHistoryButton } from "./ClearHistoryButton"
 import { DeleteHistoryItemButton } from "./DeleteHistoryItemButton"
 import type { ArticleWithRelations } from "@/lib/articles"
@@ -20,7 +21,7 @@ export default async function HistoryPage({ searchParams }: Props) {
   if (!session?.user?.id) redirect("/login")
 
   const { page: pageParam } = await searchParams
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
+  const page = parsePage(pageParam)
 
   const { items, totalPages } = await getUserReadingHistory(session.user.id, page)
 

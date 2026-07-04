@@ -38,6 +38,7 @@ export default function RoleSelect({
     <select
       defaultValue={currentRole}
       disabled={isSelf || isPending}
+      aria-label="Ubah role pengguna"
       onChange={(e) => handleChange(e.target.value as Role)}
       className="text-sm border border-zinc-200 rounded px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
     >

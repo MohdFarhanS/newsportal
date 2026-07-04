@@ -12,7 +12,13 @@
     "migrate": "prisma migrate deploy",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed:test": "npx tsx prisma/seed-test-accounts.ts",
-    "db:seed:admin": "npx tsx prisma/seed-admin.ts"
+    "db:seed:admin": "npx tsx prisma/seed-admin.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:a11y": "playwright test accessibility.spec.ts",
+    "test:responsive": "playwright test responsiveness.spec.ts",
+    "test:search": "playwright test search.spec.ts",
+    "test:bookmark-history": "playwright test bookmark-history.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -54,12 +60,15 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.19",
     "prettier": "^3.8.4",

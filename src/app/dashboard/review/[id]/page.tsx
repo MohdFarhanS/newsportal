@@ -83,7 +83,7 @@ export default async function ReviewDetailPage({
       />
 
       {/* Action buttons — FR-AM-07 */}
-      <div className="border-t border-zinc-200 pt-6 flex items-center gap-3">
+      <div className="border-t border-zinc-200 pt-6 flex flex-wrap items-center gap-3">
         <ReviewActions articleId={id} />
         <Link
           href="/dashboard/review"
