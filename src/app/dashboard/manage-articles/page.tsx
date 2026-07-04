@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import type { ArticleStatus } from "@/generated/prisma/client";
 import Pagination from "@/components/layout/Pagination";
+import { parsePage } from "@/lib/pagination";
 import OverrideActions from "./OverrideActions";
 import FeaturedToggle from "./FeaturedToggle";
 
@@ -38,7 +39,7 @@ export default async function ManageArticlesPage({
     if (role !== "ADMIN" && role !== "EDITOR") redirect("/dashboard")
 
     const { page: pageParam } = await searchParams
-    const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
+    const page = parsePage(pageParam)
 
     const { articles, totalPages } = await getAllArticlesAdmin(page)
     const isAdmin = role === "ADMIN"

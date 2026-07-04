@@ -7,6 +7,7 @@ import { getAllCategories } from "@/lib/categories"
 import { formatDistanceToNow } from "date-fns"
 import { id as localeId } from "date-fns/locale"
 import Pagination from "@/components/layout/Pagination"
+import { parsePage } from "@/lib/pagination"
 
 export const metadata: Metadata = { title: "Antrian Review" }
 
@@ -21,7 +22,7 @@ export default async function ReviewQueuePage({
   if (role !== "EDITOR" && role !== "ADMIN") redirect("/dashboard")
 
   const { page: pageParam, category } = await searchParams
-  const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
+  const page = parsePage(pageParam)
 
   const [{ articles, total, totalPages }, categories] = await Promise.all([
     getReviewQueue(page, 20, category),
