@@ -3,6 +3,7 @@ import crypto from "crypto"
 import { db } from "@/lib/db"
 import { resetPasswordSchema } from "@/schemas/auth"
 import { getRateLimiter } from "@/lib/rate-limit"
+import { getClientIp } from "@/lib/request-ip"
 import { sendPasswordResetEmail } from "@/lib/email"
 
 const OK = { message: "Jika email terdaftar, link reset password telah dikirim." }
@@ -10,10 +11,7 @@ const OK = { message: "Jika email terdaftar, link reset password telah dikirim."
 export async function POST(req: NextRequest) {
   const rl = getRateLimiter()
   if (rl) {
-    const ip =
-      req.headers.get("x-real-ip") ??
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown"
+    const ip = getClientIp(req.headers)
     const { success } = await rl.limit(`forgot-password:${ip}`)
     if (!success) {
       return NextResponse.json(

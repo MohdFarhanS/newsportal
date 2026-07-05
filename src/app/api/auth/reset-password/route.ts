@@ -5,6 +5,7 @@ import { z } from "zod"
 import { db } from "@/lib/db"
 import { newPasswordSchema } from "@/schemas/auth"
 import { getRateLimiter } from "@/lib/rate-limit"
+import { getClientIp } from "@/lib/request-ip"
 
 const schema = z.object({
   token: z.string().min(1),
@@ -18,10 +19,7 @@ const INVALID_TOKEN = {
 export async function POST(req: NextRequest) {
   const rl = getRateLimiter()
   if (rl) {
-    const ip =
-      req.headers.get("x-real-ip") ??
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown"
+    const ip = getClientIp(req.headers)
     const { success } = await rl.limit(`reset-password:${ip}`)
     if (!success) {
       return NextResponse.json(

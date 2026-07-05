@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { loginSchema } from "@/schemas/auth"
 import authConfig from "@/lib/auth.config"
 import { getLoginRateLimiter } from "@/lib/rate-limit"
+import { getClientIp } from "@/lib/request-ip"
 
 class RateLimitError extends CredentialsSignin {
   code = "rate_limited"
@@ -17,10 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials, request) {
         const rl = getLoginRateLimiter()
         if (rl) {
-          const ip =
-            request.headers.get("x-real-ip") ??
-            request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-            "unknown"
+          const ip = getClientIp(request.headers)
           const { success } = await rl.limit(`login:${ip}`)
           if (!success) throw new RateLimitError()
         }

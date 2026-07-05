@@ -4,14 +4,12 @@ import { createHash } from "crypto"
 import { subHours } from "date-fns"
 import { headers } from "next/headers"
 import { db } from "@/lib/db"
+import { getClientIp } from "@/lib/request-ip"
 
 export async function trackArticleView(articleId: string) {
   try {
     const headersList = await headers()
-    const ip =
-      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      headersList.get("x-real-ip") ??
-      "unknown"
+    const ip = getClientIp(headersList)
 
     const viewerHash = createHash("sha256").update(ip).digest("hex")
     const oneDayAgo = subHours(new Date(), 24)

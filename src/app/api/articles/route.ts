@@ -2,15 +2,13 @@
 import { subDays } from "date-fns"
 import { searchArticles } from "@/lib/articles"
 import { getSearchRateLimiter } from "@/lib/rate-limit"
+import { getClientIp } from "@/lib/request-ip"
 import { parsePage } from "@/lib/pagination"
 
 export async function GET(request: NextRequest) {
   const rl = getSearchRateLimiter()
   if (rl) {
-    const ip =
-      request.headers.get("x-real-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown"
+    const ip = getClientIp(request.headers)
     const { success } = await rl.limit(`search:${ip}`)
     if (!success) {
       return NextResponse.json(
