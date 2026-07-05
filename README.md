@@ -23,7 +23,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 | Data Fetching | TanStack Query v5 |
 | Analytics | Vercel Analytics |
 | Sanitasi HTML | sanitize-html (save-time + display-time, allowlist-based) |
-| E2E Testing | Playwright (`@playwright/test`) — auth, RBAC, editorial workflow, taxonomy, users, responsiveness, search, bookmark/history, analytics |
+| E2E Testing | Playwright (`@playwright/test`) — auth, RBAC, editorial workflow, taxonomy, users, responsiveness, search, bookmark/history, analytics, security |
 | A11y Testing | `@axe-core/playwright` — pemindaian WCAG 2.1 AA saat runtime, terintegrasi ke dalam Playwright suite |
 
 ---
@@ -106,7 +106,7 @@ Portfolio project — portal berita modern berbahasa Indonesia yang dibangun den
 
 ```
 newsportal/
-├── e2e/                      # Playwright E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history, analytics)
+├── e2e/                      # Playwright E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history, analytics, security)
 │   ├── auth.setup.ts         # "setup" project: login × 4 role, simpan storageState
 │   ├── auth.spec.ts          # Register, login, logout, rate limiting, invalidasi sesi saat suspend
 │   ├── rbac.spec.ts          # Matriks akses per role × route, ownership check
@@ -118,6 +118,7 @@ newsportal/
 │   ├── search.spec.ts         # Text search, filter combinability, pagination+filter, page fallback
 │   ├── bookmark-history.spec.ts # Bookmark toggle, auto-track riwayat baca, delete/clear-all, pagination
 │   ├── analytics.spec.ts     # Summary stats, top artikel, grafik pengguna baru (cache-busted delta)
+│   ├── security.spec.ts      # CSRF cookie flags + anonymous-401, rate-limit enforcement, XSS, security headers, malformed-body tolerance
 │   ├── .auth/                # storageState JSON hasil login (gitignored)
 │   └── utils/
 │       ├── db.ts              # pg.Client raw SQL (bukan Prisma — generated client ESM-only): seed/cleanup throwaway user & artikel
@@ -440,13 +441,14 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh (artikel, kategori, tag) ke database |
 | `db:seed:test` | `npx tsx prisma/seed-test-accounts.ts` | Buat 4 akun test (USER/JOURNALIST/EDITOR/ADMIN) — butuh `ALLOW_TEST_SEED=true` di `.env` |
 | `db:seed:admin` | `npx tsx prisma/seed-admin.ts` | Buat/update akun admin dari env vars — aman untuk production |
-| `test:e2e` | `playwright test` | Jalankan E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history, analytics) — butuh `npm run dev` di port 3000 sudah berjalan |
+| `test:e2e` | `playwright test` | Jalankan E2E test suite (auth, RBAC, editorial workflow, taxonomy, users, accessibility, responsiveness, search, bookmark/history, analytics, security) — butuh `npm run dev` di port 3000 sudah berjalan |
 | `test:e2e:ui` | `playwright test --ui` | Jalankan E2E test suite dengan Playwright UI mode (debugging) |
 | `test:a11y` | `playwright test accessibility.spec.ts` | Jalankan hanya test accessibility (axe-core) secara terisolasi |
 | `test:responsive` | `playwright test responsiveness.spec.ts` | Jalankan hanya test responsiveness (overflow/nav-toggle/column-hide/reflow) secara terisolasi |
 | `test:search` | `playwright test search.spec.ts` | Jalankan hanya test search & filtering (text search, kombinabilitas filter, pagination) secara terisolasi |
 | `test:bookmark-history` | `playwright test bookmark-history.spec.ts` | Jalankan hanya test bookmark & reading history secara terisolasi |
 | `test:analytics` | `playwright test analytics.spec.ts` | Jalankan hanya test analytics dashboard (summary stats, top artikel, grafik pengguna baru) secara terisolasi |
+| `test:security` | `playwright test security.spec.ts` | Jalankan hanya test security (CSRF, rate-limit, XSS, security headers, malformed-body) secara terisolasi |
 
 ---
 
@@ -530,7 +532,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 
 ## E2E Testing
 
-Playwright E2E suite (`e2e/`) mencakup sepuluh area kritis: **Authentication**, **RBAC**, **Editorial Workflow**, **Category/Tag Management**, **User Management**, **Accessibility** (axe-core runtime scan), **Responsiveness** (overflow/nav-toggle/column-hide/reflow @ 375/768/1024px), **Search & Filtering**, **Bookmark & Reading History**, dan **Analytics Dashboard**. Cakupan sengaja dibatasi ke area-area berisiko tinggi, bukan menyeluruh ke seluruh aplikasi. Total **231 test, semuanya passed** — dikonfirmasi lewat full run bersih setelah dua bug ditemukan dan diperbaiki di `users.spec.ts`: ketidaksesuaian data akun admin di database development, dan sebuah race condition Suspense-streaming yang membuat satu test membaca skeleton loading state alih-alih konten asli.
+Playwright E2E suite (`e2e/`) mencakup sebelas area kritis: **Authentication**, **RBAC**, **Editorial Workflow**, **Category/Tag Management**, **User Management**, **Accessibility** (axe-core runtime scan), **Responsiveness** (overflow/nav-toggle/column-hide/reflow @ 375/768/1024px), **Search & Filtering**, **Bookmark & Reading History**, **Analytics Dashboard**, dan **Security** (CSRF, rate-limit enforcement, XSS, security headers, malformed-body tolerance). Cakupan sengaja dibatasi ke area-area berisiko tinggi, bukan menyeluruh ke seluruh aplikasi. Total **256 test, semuanya passed** — dikonfirmasi lewat full run bersih setelah dua bug ditemukan dan diperbaiki di `users.spec.ts` (ketidaksesuaian data akun admin di database development, dan sebuah race condition Suspense-streaming) plus fix defense-in-depth pada resolusi IP untuk rate limiting (lihat bullet Security di bawah).
 
 - **Prasyarat**: `npm run dev` harus sudah berjalan di port 3000 sebelum `npm run test:e2e` (config `reuseExistingServer` — tidak membuka dev server baru jika sudah ada; suite tidak dijalankan sendiri oleh AI, harus dipicu manual oleh user).
 - **Target database**: Neon branch `dev` (sama dengan `DATABASE_URL` lokal). Semua data dibuat test bersifat throwaway (email `e2e-*@test.newsportal.local`, judul artikel `[E2E] ...`, nama kategori/tag `[E2E]...`) dan dihapus otomatis (`afterEach`/`finally` + `global-teardown.ts` sebagai safety net). Akun test tetap (`farhan@newsportal{admin,editor,journalist,user}.com`) dipakai read-only, tidak pernah dimutasi role/password/isActive.
@@ -540,7 +542,8 @@ Playwright E2E suite (`e2e/`) mencakup sepuluh area kritis: **Authentication**, 
 - **Search & Filtering**: `search.spec.ts` menutup gap fungsional publik (text search debounce 300ms, kombinabilitas filter kategori/tag/date-preset, pagination dengan filter aktif, fallback `page` invalid/out-of-range, 2 varian teks empty-state, kontrak publik `GET /api/articles`). Rate limiter `getSearchRateLimiter()` (30 req/menit per-IP) di-isolasi per describe block via header `x-forwarded-for` palsu (`withFakeIp()` helper) — tanpa ini, volume request kumulatif satu file bisa melebihi 30/menit karena Playwright tidak mengirim IP unik per request. Jalankan `npm run test:search` untuk scan terisolasi.
 - **Bookmark & Reading History**: `bookmark-history.spec.ts` menutup gap fungsional dashboard (toggle bookmark on/off, auto-track riwayat baca, delete-per-item, "Hapus Semua" via native `confirm()`, empty state, pagination, fallback `?page=` invalid). Menemukan & memperbaiki bug kode nyata: 5 halaman dashboard berpaginasi (`bookmarks`, `history`, `review`, `manage-articles`, `users`) ternyata belum pakai `parsePage()` dan masih memakai pola lama `parseInt` manual — semua sudah diperbaiki. Jalankan `npm run test:bookmark-history` untuk scan terisolasi.
 - **Analytics Dashboard**: `analytics.spec.ts` menguji statistik summary, tabel top artikel, dan grafik pengguna baru mingguan — sebelumnya hanya dicek dari sisi accessibility dan RBAC, isi kontennya belum pernah diuji sama sekali. Karena `getAnalyticsSummary()`/`getTopArticles()` di-cache 60 detik dan seeding fixture lewat SQL mentah tidak pernah memicu `revalidateTag`, test ini membusting cache secara sengaja lewat endpoint Admin Override (untuk statistik dan top artikel) atau lewat registrasi akun baru pada IP palsu khusus (untuk grafik pengguna, karena cache-nya pakai tag terpisah `"analytics-users"` yang hanya di-invalidate oleh registrasi). Statistik summary diuji sebagai selisih sebelum/sesudah, bukan angka pasti, karena datanya adalah agregat global lintas seluruh database development yang dipakai bersama. Jalankan `npm run test:analytics` untuk scan terisolasi.
-- **Di luar cakupan** (sengaja tidak dites di sini): SEO — sudah diverifikasi secara manual dan direncanakan mendapat test otomatis terpisah di kemudian hari.
+- **Security**: `security.spec.ts` menutup gap yang sebelumnya belum diuji terstruktur — CSRF (cookie session flags, anonymous request selalu 401 di 4 route article-workflow), rate-limit enforcement, XSS (dua mekanisme terpisah: `sanitize-html` untuk konten artikel, React JSX escaping untuk judul — sengaja tidak dicampur dalam satu test), security headers (CSP/HSTS/dll., termasuk dua test yang meng-assert kondisi permisif saat ini secara sengaja), dan malformed-body tolerance di 4 route yang tidak pakai Zod. Menemukan satu security finding nyata: IP resolution untuk rate limiting bisa di-bypass dengan mengganti header `x-forwarded-for` per request — terbukti di `npm run dev` lokal, tapi kemungkinan besar sudah termitigasi di production oleh Vercel edge network (berdasarkan dokumentasi resmi Vercel, belum diverifikasi langsung ke deployment ini). Diperbaiki sebagai defense-in-depth via `src/lib/request-ip.ts` (helper tersentralisasi, prioritas `x-vercel-forwarded-for` di Vercel, fallback lama untuk dev), bukan sebagai "menutup celah production yang terbukti dieksploitasi". Jalankan `npm run test:security` untuk scan terisolasi.
+- **Di luar cakupan** (sengaja tidak dites di sini): SEO — sudah diverifikasi secara manual dan direncanakan mendapat test otomatis terpisah di kemudian hari. Validasi server-side file upload dan 2 `npm audit` moderate findings juga di luar cakupan `security.spec.ts` — lihat CLAUDE.md untuk detail.
 
 ---
 

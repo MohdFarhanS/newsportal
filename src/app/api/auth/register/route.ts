@@ -5,14 +5,12 @@ import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/schemas/auth"
 import { getRateLimiter } from "@/lib/rate-limit"
+import { getClientIp } from "@/lib/request-ip"
 
 export async function POST(req: NextRequest) {
   const rl = getRateLimiter()
   if (rl) {
-    const ip =
-      req.headers.get("x-real-ip") ??
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown"
+    const ip = getClientIp(req.headers)
     const { success } = await rl.limit(`register:${ip}`)
     if (!success) {
       return NextResponse.json(
