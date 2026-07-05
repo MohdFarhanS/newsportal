@@ -8,6 +8,30 @@ Dibangun untuk eksplorasi editorial workflow yang realistis — 4 role dengan al
 
 🔗 Live Demo: [newsportal.my.id](https://newsportal.my.id)
 
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/homepage-desktop.png" width="100%"><br><sub>Homepage</sub></td>
+    <td width="50%"><img src="docs/screenshots/latest-desktop.png" width="100%"><br><sub>Listing artikel (/latest)</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/review-queue-desktop.png" width="100%"><br><sub>Review Queue — Editor<br><em>tidak ada artikel pending saat screenshot diambil</em></sub></td>
+    <td width="50%"><img src="docs/screenshots/analytics-desktop.png" width="100%"><br><sub>Analytics Dashboard</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/manage-articles-desktop.png" width="100%"><br><sub>Admin Override — Manage Articles</sub></td>
+    <td width="50%"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/homepage-mobile.png" width="100%"><br><sub>Homepage (mobile)</sub></td>
+    <td width="50%"><img src="docs/screenshots/dashboard-mobile.png" width="100%"><br><sub>Analytics Dashboard (mobile, Admin)</sub></td>
+  </tr>
+</table>
+
 > **Catatan:** Semua artikel, jurnalis, dan konten lainnya bersifat fiktif dan dibuat untuk keperluan demonstrasi kemampuan fullstack development.
 
 ---
