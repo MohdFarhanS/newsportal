@@ -15,6 +15,8 @@ jobs:
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
       NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+      # Placeholder — build hanya import module Resend
+      RESEND_API_KEY: re_ci_placeholder
 
     steps:
       - uses: actions/checkout@v4
