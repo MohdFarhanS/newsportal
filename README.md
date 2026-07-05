@@ -20,6 +20,9 @@ Dibangun untuk eksplorasi editorial workflow yang realistis — 4 role dengan al
 - **SEO-ready** — Lighthouse SEO 100/100, JSON-LD structured data, dynamic sitemap, llms.txt
 - **Security-hardened** — rate limiting, sanitasi HTML dua layer, security headers, session re-validation
 
+![Lighthouse audit — live production, desktop](docs/lighthouse/desktop-summary.png)
+*Lighthouse audit — live production, desktop*
+
 ---
 
 ## Tech Stack
@@ -146,6 +149,7 @@ Dibangun untuk eksplorasi editorial workflow yang realistis — 4 role dengan al
 - CI pipeline saat ini mencakup lint, typecheck, dan build; E2E suite (256 test) dijalankan manual sebelum deploy — integrasi otomatis ke pipeline menjadi langkah pengembangan berikutnya
 - Rate limiting (Upstash) di-skip secara graceful kalau env var kosong — aman untuk development, tapi berarti proteksi rate-limit tidak aktif kecuali env dikonfigurasi
 - Validasi file upload (avatar/cover image) masih mengandalkan konfigurasi client-side Cloudinary widget, belum ada validasi ulang di endpoint aplikasi sendiri
+- Footer disclaimer text memiliki contrast ratio di bawah WCAG AA (2.53:1, minimal 4.5:1) — trade-off desain yang disengaja agar teks disclaimer tidak lebih menonjol dari copyright line; sudah terdeteksi di test suite (`accessibility.spec.ts`) sebagai known gap, belum diperbaiki
 
 ---
 
