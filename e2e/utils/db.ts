@@ -419,6 +419,41 @@ export async function deleteAllReadingHistoryForUser(userId: string) {
   await c.query(`DELETE FROM reading_history WHERE user_id = $1`, [userId])
 }
 
+// ---- Article Views ----
+
+// Single row, precise viewedAt control — for date-boundary tests (mirrors seedReadingHistory).
+export async function seedArticleView(
+  articleId: string,
+  viewedAt?: Date,
+  viewerHash?: string
+): Promise<{ id: string }> {
+  const c = await db()
+  const id = newId()
+  await c.query(
+    `INSERT INTO article_views (id, article_id, viewer_hash, viewed_at) VALUES ($1, $2, $3, $4)`,
+    [id, articleId, viewerHash ?? newId(), toSql(viewedAt) ?? new Date().toISOString()]
+  )
+  return { id }
+}
+
+// Bulk insert (single multi-row INSERT, not N round trips) — for dominant/decoy view-count
+// fixtures where per-row timestamp precision doesn't matter, only the count and date-range bucket.
+export async function seedArticleViews(articleId: string, count: number, viewedAt?: Date): Promise<void> {
+  const c = await db()
+  const viewedAtSql = toSql(viewedAt) ?? new Date().toISOString()
+  const values: string[] = []
+  const params: unknown[] = []
+  for (let i = 0; i < count; i++) {
+    const base = i * 4
+    values.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`)
+    params.push(newId(), articleId, newId(), viewedAtSql)
+  }
+  await c.query(
+    `INSERT INTO article_views (id, article_id, viewer_hash, viewed_at) VALUES ${values.join(", ")}`,
+    params
+  )
+}
+
 // ---- Safety-net sweep ----
 
 export async function sweepLeftoverE2eData() {

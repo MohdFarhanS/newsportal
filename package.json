@@ -18,7 +18,8 @@
     "test:a11y": "playwright test accessibility.spec.ts",
     "test:responsive": "playwright test responsiveness.spec.ts",
     "test:search": "playwright test search.spec.ts",
-    "test:bookmark-history": "playwright test bookmark-history.spec.ts"
+    "test:bookmark-history": "playwright test bookmark-history.spec.ts",
+    "test:analytics": "playwright test analytics.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
