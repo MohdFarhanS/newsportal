@@ -30,7 +30,7 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
       testMatch:
-        /(auth|rbac|editorial-workflow|taxonomy|users|accessibility|responsiveness|search|bookmark-history)\.spec\.ts/,
+        /(auth|rbac|editorial-workflow|taxonomy|users|accessibility|responsiveness|search|bookmark-history|analytics)\.spec\.ts/,
     },
   ],
 })

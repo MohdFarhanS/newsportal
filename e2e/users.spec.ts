@@ -19,6 +19,13 @@ test.describe("List & filter", () => {
   test("filtering by role shows only matching rows", async ({ page }) => {
     await page.goto("/dashboard/users?role=ADMIN")
     const rows = page.locator(".divide-y > div")
+    // /dashboard/users has no route-specific loading.tsx, so the parent dashboard/loading.tsx
+    // Suspense fallback applies — it renders its own 5 skeleton rows matching this same
+    // ".divide-y > div" selector, with no <select> inside them. page.goto() only waits for the
+    // initial document, which can still be that skeleton. Wait for a real row's <select> (absent
+    // from the skeleton) before taking a count, or a raw non-retrying count can catch the
+    // transient 5 and go stale once the real (possibly smaller) content streams in.
+    await expect(rows.first().locator("select")).toBeVisible()
     const count = await rows.count()
     expect(count).toBeGreaterThan(0)
     for (let i = 0; i < count; i++) {
