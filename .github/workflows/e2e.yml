@@ -19,6 +19,11 @@ jobs:
       # Placeholder — dev server only compiles email.ts when a route that imports it
       # (forgot-password) is hit; constructor throws on a falsy key, doesn't need to be valid.
       RESEND_API_KEY: re_ci_placeholder
+      # Placeholder — next-cloudinary's CldUploadWidget throws at mount if this is falsy
+      # (pure presence check, no Cloudinary API call). ArticleForm/ProfileForm use uploadPreset
+      # (unsigned upload), so no API key/secret is ever read client-side — dummy value is safe,
+      # no real upload happens in this suite.
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci-placeholder
       # Repo variable (not secret) — hostname fragment used by seed-test-accounts.ts's
       # whitelist guard, refuses to run against anything that isn't the Neon dev branch.
       NEON_DEV_ENDPOINT_ID: ${{ vars.NEON_DEV_ENDPOINT_ID }}

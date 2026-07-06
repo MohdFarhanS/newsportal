@@ -30,8 +30,9 @@ const EXPECTED_CSP =
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://upload-widget.cloudinary.com https://va.vercel-scripts.com; " +
   "style-src 'self' 'unsafe-inline'; " +
   "img-src 'self' data: blob: https://res.cloudinary.com https://picsum.photos https://fastly.picsum.photos; " +
-  "connect-src 'self' https://vitals.vercel-insights.com; " +
+  "connect-src 'self' https://vitals.vercel-insights.com https://o4511686847954944.ingest.us.sentry.io; " +
   "frame-src https://upload-widget.cloudinary.com; " +
+  "worker-src 'self' blob:; " +
   "object-src 'none'; " +
   "base-uri 'self'"
 
