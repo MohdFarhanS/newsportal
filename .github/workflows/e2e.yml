@@ -1,0 +1,59 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      # Placeholder — dev server only compiles email.ts when a route that imports it
+      # (forgot-password) is hit; constructor throws on a falsy key, doesn't need to be valid.
+      RESEND_API_KEY: re_ci_placeholder
+      # Repo variable (not secret) — hostname fragment used by seed-test-accounts.ts's
+      # whitelist guard, refuses to run against anything that isn't the Neon dev branch.
+      NEON_DEV_ENDPOINT_ID: ${{ vars.NEON_DEV_ENDPOINT_ID }}
+      # Scoped to this job only — does not change the project default (ALLOW_TEST_SEED=false).
+      ALLOW_TEST_SEED: "true"
+      # Isolates rate-limit counters in the shared Upstash instance from production traffic
+      # (Upstash free tier is single-database — this is namespacing, not a separate instance).
+      RATE_LIMIT_KEY_PREFIX: ci-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply database migrations
+        run: npm run migrate
+
+      - name: Seed test accounts (dev-only, whitelist-guarded)
+        run: npm run db:seed:test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

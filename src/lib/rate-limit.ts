@@ -7,7 +7,9 @@ function makeRateLimiter(tokens: number, window: string) {
     redis: Redis.fromEnv(),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     limiter: Ratelimit.slidingWindow(tokens, window as any),
-    prefix: "newsportal",
+    // Namespaces every Redis key this limiter writes — lets CI share the same Upstash
+    // instance as production without counters colliding (set via RATE_LIMIT_KEY_PREFIX in CI only).
+    prefix: process.env.RATE_LIMIT_KEY_PREFIX ?? "newsportal",
   })
 }
 

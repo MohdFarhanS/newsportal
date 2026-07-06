@@ -4,6 +4,28 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { Role } from '../src/generated/prisma/enums'
 import bcrypt from 'bcryptjs'
 
+function assertDevDatabase(rawUrl: string) {
+  const expectedHostFragment = process.env.NEON_DEV_ENDPOINT_ID
+  if (!expectedHostFragment) {
+    throw new Error(
+      'REFUSED: NEON_DEV_ENDPOINT_ID tidak di-set. Seeder ini menolak jalan tanpa whitelist host dev eksplisit.'
+    )
+  }
+  let hostname: string
+  try {
+    hostname = new URL(rawUrl).hostname
+  } catch {
+    throw new Error('REFUSED: DATABASE_URL tidak valid, tidak bisa diverifikasi host-nya.')
+  }
+  if (!hostname.includes(expectedHostFragment)) {
+    throw new Error(
+      `REFUSED: DATABASE_URL host ("${hostname}") tidak cocok whitelist dev ("${expectedHostFragment}"). ` +
+      `Seeder ini TIDAK akan pernah jalan di database yang tidak diverifikasi dev.`
+    )
+  }
+  console.log(`  Host diverifikasi cocok whitelist dev: ${hostname}`)
+}
+
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
@@ -13,6 +35,9 @@ async function main() {
     console.warn('   In production, use seed-admin instead.')
     return
   }
+
+  assertDevDatabase(process.env.DATABASE_URL!)
+
   const hash = await bcrypt.hash('password123', 10)
 
   const accounts = [
