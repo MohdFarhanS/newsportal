@@ -318,7 +318,7 @@ Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ic
 
 Playwright E2E suite (`e2e/`) — **256 test, semuanya passed**, mencakup 11 area kritis: Authentication, RBAC, Editorial Workflow, Taxonomy Management, User Management, Accessibility (axe-core, WCAG 2.1 AA), Responsiveness, Search & Filtering, Bookmark & Reading History, Analytics Dashboard, dan Security (CSRF, rate-limit, XSS, security headers). Cakupan sengaja dibatasi ke area berisiko tinggi, bukan menyeluruh ke seluruh aplikasi.
 
-📊 [Lihat Test Report Lengkap](https://mohdfarhans.github.io/newsportal/test-report/)
+📊 [Lihat Test Report Lengkap](https://mohdfarhans.github.io/newsportal/)
 
 **Prasyarat:** `npm run dev` harus sudah berjalan di port 3000 sebelum menjalankan test (`playwright.config.ts` reuse existing server, tidak membuka dev server baru).
 
