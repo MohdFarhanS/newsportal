@@ -174,7 +174,6 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 
 ## Known Limitations
 
-- CI pipeline saat ini mencakup lint, typecheck, dan build; E2E suite (256 test) dijalankan manual sebelum deploy — integrasi otomatis ke pipeline menjadi langkah pengembangan berikutnya
 - Rate limiting (Upstash) di-skip secara graceful kalau env var kosong — aman untuk development, tapi berarti proteksi rate-limit tidak aktif kecuali env dikonfigurasi
 - Validasi file upload (avatar/cover image) masih mengandalkan konfigurasi client-side Cloudinary widget, belum ada validasi ulang di endpoint aplikasi sendiri
 - Footer disclaimer text memiliki contrast ratio di bawah WCAG AA (2.53:1, minimal 4.5:1) — trade-off desain yang disengaja agar teks disclaimer tidak lebih menonjol dari copyright line; sudah terdeteksi di test suite (`accessibility.spec.ts`) sebagai known gap, belum diperbaiki
@@ -327,6 +326,8 @@ Playwright E2E suite (`e2e/`) — **256 test, semuanya passed**, mencakup 11 are
 npm run test:e2e      # jalankan seluruh suite
 npm run test:e2e:ui   # mode UI (debugging)
 ```
+
+Selain lokal, suite ini juga bisa dijalankan on-demand di CI lewat GitHub Actions workflow **"E2E Tests"** (`.github/workflows/e2e.yml`, trigger manual via tab Actions). Sengaja dipisah dari `ci.yml` (lint/typecheck/build, jalan otomatis tiap push) jadi 2 workflow terpisah — supaya push biasa tetap cepat, sementara suite E2E yang lebih berat (~20 menit) dijalankan hanya saat dibutuhkan.
 
 Detail lengkap per-suite (bug yang ditemukan, catatan rate-limit, teknik testing, known limitations) ada di [`docs/TESTING.md`](docs/TESTING.md).
 
