@@ -10,6 +10,10 @@ Dibangun untuk eksplorasi editorial workflow yang realistis — 4 role dengan al
 
 ## Screenshots
 
+**Demo — Editorial Workflow** (submit → review → approve)
+
+https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
+
 <table>
   <tr>
     <td width="50%"><img src="docs/screenshots/homepage-desktop.png" width="100%"><br><sub>Homepage</sub></td>
