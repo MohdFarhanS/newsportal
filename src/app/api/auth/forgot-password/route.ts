@@ -2,23 +2,20 @@ import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { db } from "@/lib/db"
 import { resetPasswordSchema } from "@/schemas/auth"
-import { getRateLimiter } from "@/lib/rate-limit"
+import { getRateLimiter, safeRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/request-ip"
 import { sendPasswordResetEmail } from "@/lib/email"
 
 const OK = { message: "Jika email terdaftar, link reset password telah dikirim." }
 
 export async function POST(req: NextRequest) {
-  const rl = getRateLimiter()
-  if (rl) {
-    const ip = getClientIp(req.headers)
-    const { success } = await rl.limit(`forgot-password:${ip}`)
-    if (!success) {
-      return NextResponse.json(
-        { error: { code: "RATE_LIMIT", message: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." } },
-        { status: 429 }
-      )
-    }
+  const ip = getClientIp(req.headers)
+  const { success } = await safeRateLimit(getRateLimiter(), `forgot-password:${ip}`)
+  if (!success) {
+    return NextResponse.json(
+      { error: { code: "RATE_LIMIT", message: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." } },
+      { status: 429 }
+    )
   }
 
   const body = await req.json().catch(() => null)

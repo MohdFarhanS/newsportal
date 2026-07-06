@@ -1,21 +1,18 @@
 ﻿import { NextRequest, NextResponse } from "next/server"
 import { subDays } from "date-fns"
 import { searchArticles } from "@/lib/articles"
-import { getSearchRateLimiter } from "@/lib/rate-limit"
+import { getSearchRateLimiter, safeRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/request-ip"
 import { parsePage } from "@/lib/pagination"
 
 export async function GET(request: NextRequest) {
-  const rl = getSearchRateLimiter()
-  if (rl) {
-    const ip = getClientIp(request.headers)
-    const { success } = await rl.limit(`search:${ip}`)
-    if (!success) {
-      return NextResponse.json(
-        { error: { code: "RATE_LIMIT", message: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." } },
-        { status: 429 }
-      )
-    }
+  const ip = getClientIp(request.headers)
+  const { success } = await safeRateLimit(getSearchRateLimiter(), `search:${ip}`)
+  if (!success) {
+    return NextResponse.json(
+      { error: { code: "RATE_LIMIT", message: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." } },
+      { status: 429 }
+    )
   }
 
   const { searchParams } = new URL(request.url)

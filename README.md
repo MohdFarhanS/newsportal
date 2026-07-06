@@ -140,7 +140,7 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 ### Security
 - Password reset token: sekali pakai, expire 1 jam, disimpan sebagai SHA-256 hash
 - Sesi JWT di-re-validasi ke DB tiap request (`isActive`, `passwordChangedAt`) — auto-revoke saat suspend/ganti password
-- Rate limiting (Upstash Redis) di endpoint sensitif, graceful skip jika env kosong di dev
+- Rate limiting (Upstash Redis) di endpoint sensitif — fail-open kalau env kosong atau Upstash gagal konek saat runtime; di production kondisi ini memicu satu Sentry alert per cold start (`safeRateLimit()`, bukan silent lagi)
 - Security headers lengkap: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
 - Resolusi IP client tersentralisasi (`getClientIp`) — prioritas header edge-injected Vercel di production, mencegah bypass rate-limiter via spoofing `x-forwarded-for`
 - Sanitasi HTML dua layer (save-time + display-time) via `sanitize-html`, allowlist-based
@@ -174,7 +174,7 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 
 ## Known Limitations
 
-- Rate limiting (Upstash) di-skip secara graceful kalau env var kosong — aman untuk development, tapi berarti proteksi rate-limit tidak aktif kecuali env dikonfigurasi
+- Rate limiting (Upstash) tetap fail-open kalau env var kosong ATAU Upstash gagal konek saat runtime (request tetap diproses tanpa limit, di semua environment) — aman untuk development yang tidak setup Upstash. Di production, kondisi ini tidak lagi silent: `safeRateLimit()` (`src/lib/rate-limit.ts`) mengirim satu Sentry alert per cold start (`process.env.VERCEL_ENV === "production"`, throttle via module-level flag) supaya ada yang tahu proteksi sedang tidak aktif — tapi tetap tidak memblokir request (murni observability, bukan fail-closed)
 - Validasi file upload (avatar/cover image) masih mengandalkan konfigurasi client-side Cloudinary widget, belum ada validasi ulang di endpoint aplikasi sendiri
 - Footer disclaimer text memiliki contrast ratio di bawah WCAG AA (2.53:1, minimal 4.5:1) — trade-off desain yang disengaja agar teks disclaimer tidak lebih menonjol dari copyright line; sudah terdeteksi di test suite (`accessibility.spec.ts`) sebagai known gap, belum diperbaiki
 

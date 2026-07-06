@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 import { loginSchema } from "@/schemas/auth"
 import authConfig from "@/lib/auth.config"
-import { getLoginRateLimiter } from "@/lib/rate-limit"
+import { getLoginRateLimiter, safeRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/request-ip"
 
 class RateLimitError extends CredentialsSignin {
@@ -16,12 +16,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials, request) {
-        const rl = getLoginRateLimiter()
-        if (rl) {
-          const ip = getClientIp(request.headers)
-          const { success } = await rl.limit(`login:${ip}`)
-          if (!success) throw new RateLimitError()
-        }
+        const ip = getClientIp(request.headers)
+        const { success } = await safeRateLimit(getLoginRateLimiter(), `login:${ip}`)
+        if (!success) throw new RateLimitError()
 
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null

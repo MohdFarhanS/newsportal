@@ -4,20 +4,17 @@ import { revalidateTag } from "next/cache"
 import { Prisma } from "@/generated/prisma/client"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/schemas/auth"
-import { getRateLimiter } from "@/lib/rate-limit"
+import { getRateLimiter, safeRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/request-ip"
 
 export async function POST(req: NextRequest) {
-  const rl = getRateLimiter()
-  if (rl) {
-    const ip = getClientIp(req.headers)
-    const { success } = await rl.limit(`register:${ip}`)
-    if (!success) {
-      return NextResponse.json(
-        { error: { code: "RATE_LIMIT", message: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." } },
-        { status: 429 }
-      )
-    }
+  const ip = getClientIp(req.headers)
+  const { success } = await safeRateLimit(getRateLimiter(), `register:${ip}`)
+  if (!success) {
+    return NextResponse.json(
+      { error: { code: "RATE_LIMIT", message: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." } },
+      { status: 429 }
+    )
   }
 
   const body = await req.json().catch(() => null)
