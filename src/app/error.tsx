@@ -1,11 +1,19 @@
 "use client"
 
+import * as Sentry from "@sentry/nextjs"
+import { useEffect } from "react"
+
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
       <h2 className="font-heading text-2xl font-bold text-[#09090B] mb-4">
