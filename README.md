@@ -144,6 +144,7 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 - Security headers lengkap: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
 - Resolusi IP client tersentralisasi (`getClientIp`) — prioritas header edge-injected Vercel di production, mencegah bypass rate-limiter via spoofing `x-forwarded-for`
 - Sanitasi HTML dua layer (save-time + display-time) via `sanitize-html`, allowlist-based
+- Error monitoring (Sentry) terintegrasi di production (client/server/edge) — Session Replay dengan masking eksplisit untuk semua text/input, mencegah kebocoran data di halaman auth (login/register/forgot-password)
 
 ### Reliability & Data Integrity
 - TOCTOU guard (atomic `updateMany`) pada aksi review artikel bersamaan — race condition menghasilkan 409 Conflict, bukan data korup
@@ -173,7 +174,6 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 
 ## Known Limitations
 
-- Belum ada error monitoring/tracking (Sentry atau sejenisnya) — error di production saat ini hanya terlihat lewat Vercel logs, belum ada alerting otomatis
 - CI pipeline saat ini mencakup lint, typecheck, dan build; E2E suite (256 test) dijalankan manual sebelum deploy — integrasi otomatis ke pipeline menjadi langkah pengembangan berikutnya
 - Rate limiting (Upstash) di-skip secara graceful kalau env var kosong — aman untuk development, tapi berarti proteksi rate-limit tidak aktif kecuali env dikonfigurasi
 - Validasi file upload (avatar/cover image) masih mengandalkan konfigurasi client-side Cloudinary widget, belum ada validasi ulang di endpoint aplikasi sendiri
