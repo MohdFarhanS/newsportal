@@ -48,6 +48,7 @@ next-env.d.ts
 .gstack/
 prd
 CLAUDE.md
+docs/MIGRATION-NOTES.md
 .claude
 .remember
 prd_content.txt
