@@ -5,7 +5,7 @@ import { trackReadingHistoryAction } from "@/actions/readingHistory"
 
 export function HistoryTracker({ articleId }: { articleId: string }) {
   useEffect(() => {
-    trackReadingHistoryAction(articleId)
+    trackReadingHistoryAction(articleId).catch(() => {})
   }, [articleId])
   return null
 }

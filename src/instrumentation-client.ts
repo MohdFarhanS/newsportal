@@ -21,6 +21,13 @@ Sentry.init({
   ],
 
   debug: false,
+
+  // Browser extension noise (password managers, Grammarly, dll) - bukan error aplikasi
+  ignoreErrors: [
+    "Object Not Found Matching Id",
+    "ResizeObserver loop limit exceeded",
+    "ResizeObserver loop completed with undelivered notifications",
+  ],
 })
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

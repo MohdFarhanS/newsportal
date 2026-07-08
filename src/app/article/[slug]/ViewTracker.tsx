@@ -5,7 +5,7 @@ import { trackArticleView } from "@/lib/actions/view"
 
 export function ViewTracker({ articleId }: { articleId: string }) {
   useEffect(() => {
-    trackArticleView(articleId)
+    trackArticleView(articleId).catch(() => {})
   }, [articleId])
   return null
 }

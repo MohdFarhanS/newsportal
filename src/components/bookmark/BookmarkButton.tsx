@@ -17,13 +17,17 @@ export default function BookmarkButton({ articleId, initialBookmarked }: Bookmar
 
   function handleToggle() {
     startTransition(async () => {
-      const result = await toggleBookmarkAction(articleId)
-      if (result.error) {
-        toast.error(result.error)
-        return
+      try {
+        const result = await toggleBookmarkAction(articleId)
+        if (result.error) {
+          toast.error(result.error)
+          return
+        }
+        setBookmarked(result.bookmarked ?? false)
+        toast.success(result.bookmarked ? "Artikel disimpan ke bookmark" : "Bookmark dihapus")
+      } catch {
+        toast.error("Gagal memproses bookmark. Coba lagi.")
       }
-      setBookmarked(result.bookmarked ?? false)
-      toast.success(result.bookmarked ? "Artikel disimpan ke bookmark" : "Bookmark dihapus")
     })
   }
 
