@@ -26,6 +26,7 @@ type Props = {
 
 export default function ProfileForm({ initialValues }: Props) {
   const [avatarUrl, setAvatarUrl] = useState(initialValues.avatarUrl)
+  const [avatarPublicId, setAvatarPublicId] = useState<string | undefined>(undefined)
 
   const {
     register,
@@ -42,7 +43,7 @@ export default function ProfileForm({ initialValues }: Props) {
   })
 
   async function onSubmit(data: ProfileInput) {
-    const result = await updateProfileAction({ ...data, avatarUrl })
+    const result = await updateProfileAction({ ...data, avatarUrl, avatarPublicId })
     if (result.error) {
       toast.error(result.error)
       return
@@ -81,6 +82,9 @@ export default function ProfileForm({ initialValues }: Props) {
                 "secure_url" in result.info
               ) {
                 setAvatarUrl(result.info.secure_url as string)
+                setAvatarPublicId(
+                  "public_id" in result.info ? (result.info.public_id as string) : undefined,
+                )
               }
             }}
           >

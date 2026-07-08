@@ -6,6 +6,7 @@ import sanitizeHtml from "sanitize-html"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { SANITIZE_OPTIONS } from "@/lib/sanitize"
+import { verifyUploadedImage } from "@/lib/cloudinary-verify"
 import {
   articleSchema,
   saveDraftSchema,
@@ -42,16 +43,27 @@ async function generateUniqueSlug(title: string, excludeId?: string): Promise<st
 }
 
 export async function createArticleAction(
-  data: ArticleInput,
+  data: ArticleInput & { coverImagePublicId?: string },
 ): Promise<{ error?: string; id?: string }> {
   const result = await requireContentRole()
   if ("error" in result) return { error: result.error }
   const { session } = result
 
-  const parsed = articleSchema.safeParse(data)
+  const { coverImagePublicId, ...rest } = data
+  const parsed = articleSchema.safeParse(rest)
   if (!parsed.success) return { error: "Data tidak valid" }
 
-  const { title, categoryId, tags: tagIds, excerpt, content, coverImageUrl } = parsed.data
+  const { title, categoryId, tags: tagIds, excerpt, content } = parsed.data
+  let coverImageUrl = parsed.data.coverImageUrl
+
+  // Artikel baru selalu mulai tanpa cover — coverImageUrl apapun yang terisi di sini
+  // adalah upload baru, wajib terverifikasi.
+  if (coverImageUrl) {
+    const verified = await verifyUploadedImage(coverImagePublicId)
+    if (!verified.ok) return { error: verified.reason }
+    coverImageUrl = verified.secureUrl
+  }
+
   const slug = await generateUniqueSlug(title)
   const sanitizedContent = sanitizeHtml(content, SANITIZE_OPTIONS)
 
@@ -75,7 +87,7 @@ export async function createArticleAction(
 
 export async function updateArticleAction(
   id: string,
-  data: ArticleInput,
+  data: ArticleInput & { coverImagePublicId?: string },
 ): Promise<{ error?: string }> {
   const result = await requireContentRole()
   if ("error" in result) return { error: result.error }
@@ -83,17 +95,28 @@ export async function updateArticleAction(
 
   const existing = await db.article.findFirst({
     where: { id, authorId: session.user.id },
-    select: { status: true },
+    select: { status: true, coverImageUrl: true },
   })
   if (!existing) return { error: "Artikel tidak ditemukan" }
   if (existing.status !== "DRAFT" && existing.status !== "REJECTED") {
     return { error: "Artikel tidak dapat diedit" }
   }
 
-  const parsed = articleSchema.safeParse(data)
+  const { coverImagePublicId, ...rest } = data
+  const parsed = articleSchema.safeParse(rest)
   if (!parsed.success) return { error: "Data tidak valid" }
 
-  const { title, categoryId, tags: tagIds, excerpt, content, coverImageUrl } = parsed.data
+  const { title, categoryId, tags: tagIds, excerpt, content } = parsed.data
+  let coverImageUrl = parsed.data.coverImageUrl
+
+  // Hanya re-verifikasi kalau coverImageUrl benar-benar berubah dari yang sudah
+  // tersimpan — cover lama yang tidak disentuh tidak perlu diverifikasi ulang.
+  if (coverImageUrl && coverImageUrl !== (existing.coverImageUrl ?? "")) {
+    const verified = await verifyUploadedImage(coverImagePublicId)
+    if (!verified.ok) return { error: verified.reason }
+    coverImageUrl = verified.secureUrl
+  }
+
   const slug = await generateUniqueSlug(title, id)
   const sanitizedContent = sanitizeHtml(content, SANITIZE_OPTIONS)
 
@@ -118,7 +141,7 @@ export async function updateArticleAction(
 
 export async function saveDraftAction(
   id: string,
-  data: SaveDraftInput,
+  data: SaveDraftInput & { coverImagePublicId?: string },
 ): Promise<{ error?: string }> {
   const result = await requireContentRole()
   if ("error" in result) return { error: result.error }
@@ -126,11 +149,12 @@ export async function saveDraftAction(
 
   const existing = await db.article.findFirst({
     where: { id, authorId: session.user.id, status: "DRAFT" },
-    select: { id: true, tags: { select: { tagId: true } } },
+    select: { id: true, coverImageUrl: true, tags: { select: { tagId: true } } },
   })
   if (!existing) return {}
 
-  const parsed = saveDraftSchema.safeParse(data)
+  const { coverImagePublicId, ...rest } = data
+  const parsed = saveDraftSchema.safeParse(rest)
   if (!parsed.success) return {}
 
   const { title, categoryId, tags: tagIds, excerpt, content, coverImageUrl } = parsed.data
@@ -143,7 +167,17 @@ export async function saveDraftAction(
   if (categoryId !== undefined) updateData.categoryId = categoryId
   if (excerpt !== undefined) updateData.excerpt = excerpt
   if (content !== undefined) updateData.content = sanitizeHtml(content, SANITIZE_OPTIONS)
-  if (coverImageUrl !== undefined) updateData.coverImageUrl = coverImageUrl || null
+  if (coverImageUrl !== undefined) {
+    if (!coverImageUrl || coverImageUrl === (existing.coverImageUrl ?? "")) {
+      updateData.coverImageUrl = coverImageUrl || null
+    } else {
+      // Autosave bersifat silent/fire-and-forget (lihat useEffect di ArticleForm) — kalau
+      // verifikasi gagal, skip cover field ini saja (bukan gagalkan seluruh autosave).
+      // User akan lihat error eksplisit lewat tombol "Simpan Draft" (updateArticleAction).
+      const verified = await verifyUploadedImage(coverImagePublicId)
+      if (verified.ok) updateData.coverImageUrl = verified.secureUrl
+    }
+  }
 
   if (tagIds !== undefined) {
     const existingTagIds = existing.tags.map((t) => t.tagId).sort().join(",")

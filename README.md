@@ -175,7 +175,7 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 ## Known Limitations
 
 - Rate limiting (Upstash) tetap fail-open kalau env var kosong ATAU Upstash gagal konek saat runtime (request tetap diproses tanpa limit, di semua environment) — aman untuk development yang tidak setup Upstash. Di production, kondisi ini tidak lagi silent: `safeRateLimit()` (`src/lib/rate-limit.ts`) mengirim satu Sentry alert per cold start (`process.env.VERCEL_ENV === "production"`, throttle via module-level flag) supaya ada yang tahu proteksi sedang tidak aktif — tapi tetap tidak memblokir request (murni observability, bukan fail-closed)
-- Validasi file upload (avatar/cover image) masih mengandalkan konfigurasi client-side Cloudinary widget, belum ada validasi ulang di endpoint aplikasi sendiri
+- Upload avatar/cover image pakai unsigned Cloudinary preset — sudah ada validasi server-side (Cloudinary Admin API di-query ulang sebelum URL disimpan ke DB, `src/lib/cloudinary-verify.ts`) plus preset-level constraint di Cloudinary dashboard, jadi bypass widget (upload langsung ke endpoint Cloudinary, skip UI) tidak lagi lolos tanpa validasi. Signed upload (server men-generate signature sebelum upload diizinkan) dicatat sebagai potential future hardening, belum diterapkan — cukup untuk skala portfolio saat ini
 - Footer disclaimer text memiliki contrast ratio di bawah WCAG AA (2.53:1, minimal 4.5:1) — trade-off desain yang disengaja agar teks disclaimer tidak lebih menonjol dari copyright line; sudah terdeteksi di test suite (`accessibility.spec.ts`) sebagai known gap, belum diperbaiki
 
 ---

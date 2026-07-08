@@ -64,6 +64,10 @@ export default function ArticleForm({ initialData, categories, tags }: Props) {
   const debouncedTitle = useDebounce(title, 400)
   const slugPreview = slugify(debouncedTitle || "", { lower: true, strict: true })
 
+  // Cover image state (managed separately from RHF so UploadWidget result feeds in)
+  const [coverPreview, setCoverPreview] = useState(initialData?.coverImageUrl ?? "")
+  const [coverPublicId, setCoverPublicId] = useState<string | undefined>(undefined)
+
   // Autosave for DRAFT articles (edit mode only)
   const formValues = watch()
   const debouncedValues = useDebounce(formValues, 10000)
@@ -78,30 +82,28 @@ export default function ArticleForm({ initialData, categories, tags }: Props) {
     if (!initialData?.id || initialData.status !== "DRAFT") return
 
     setAutoSaveStatus("saving")
-    saveDraftAction(initialData.id, debouncedValues).then(() => {
+    saveDraftAction(initialData.id, { ...debouncedValues, coverImagePublicId: coverPublicId }).then(() => {
       setAutoSaveStatus("saved")
       setTimeout(() => setAutoSaveStatus("idle"), 2000)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedValues])
-
-  // Cover image state (managed separately from RHF so UploadWidget result feeds in)
-  const [coverPreview, setCoverPreview] = useState(initialData?.coverImageUrl ?? "")
+  }, [debouncedValues, coverPublicId])
 
   const handleCoverUpload = (result: CloudinaryUploadWidgetResults) => {
     if (result.event !== "success") return
-    const info = result.info as { secure_url: string }
+    const info = result.info as { secure_url: string; public_id: string }
     setValue("coverImageUrl", info.secure_url)
     setCoverPreview(info.secure_url)
+    setCoverPublicId(info.public_id)
   }
 
   const onSaveDraft = handleSubmit(async (data) => {
     if (isEdit) {
-      const res = await updateArticleAction(initialData.id, data)
+      const res = await updateArticleAction(initialData.id, { ...data, coverImagePublicId: coverPublicId })
       if (res.error) return toast.error(res.error)
       toast.success("Artikel disimpan")
     } else {
-      const res = await createArticleAction(data)
+      const res = await createArticleAction({ ...data, coverImagePublicId: coverPublicId })
       if (res.error) return toast.error(res.error)
       router.push(`/dashboard/articles/${res.id}/edit`)
     }
