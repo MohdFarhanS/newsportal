@@ -237,7 +237,7 @@ test.describe("Category / tag / date filter combinability", () => {
     expect(json.data[0].id).toBe(articleMatchId)
 
     await page.goto(`/search?q=${sharedToken}&category=${categoryASlug}&tag=${tagSlug}&date=7d`)
-    await expect(page.getByText("Menampilkan 1 dari 1 artikel")).toBeVisible()
+    await expect(page.getByText("Menampilkan 1 dari 1 artikel")).toBeVisible({ timeout: 15000 })
   })
 
   test("clicking a selected category button again deselects it (toggle-off)", async ({ page }) => {

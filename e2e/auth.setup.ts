@@ -14,7 +14,7 @@ for (const [role, creds] of Object.entries(ACCOUNTS)) {
     await page.locator("#password").fill(creds.password)
     await page.getByRole("button", { name: "Masuk →" }).click()
     await page.waitForURL("/")
-    await expect(page.getByText("Keluar")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Keluar", exact: true})).toBeVisible()
     await page.context().storageState({ path: `e2e/.auth/${role}.json` })
   })
 }
