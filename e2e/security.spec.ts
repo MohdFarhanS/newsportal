@@ -251,6 +251,7 @@ test.describe("XSS — sanitize-html strips executable content from article.cont
 
 test.describe("XSS — title/excerpt rely on React escaping, not sanitize-html", () => {
   test("a title containing <script> renders as inert literal text, not executable markup (React JSX escaping, distinct from the sanitize-html mechanism above)", async ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     page,
     browser,
   }) => {

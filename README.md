@@ -177,6 +177,7 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 - Rate limiting (Upstash) tetap fail-open kalau env var kosong ATAU Upstash gagal konek saat runtime (request tetap diproses tanpa limit, di semua environment) — aman untuk development yang tidak setup Upstash. Di production, kondisi ini tidak lagi silent: `safeRateLimit()` (`src/lib/rate-limit.ts`) mengirim satu Sentry alert per cold start (`process.env.VERCEL_ENV === "production"`, throttle via module-level flag) supaya ada yang tahu proteksi sedang tidak aktif — tapi tetap tidak memblokir request (murni observability, bukan fail-closed)
 - Upload avatar/cover image pakai unsigned Cloudinary preset — sudah ada validasi server-side (Cloudinary Admin API di-query ulang sebelum URL disimpan ke DB, `src/lib/cloudinary-verify.ts`) plus preset-level constraint di Cloudinary dashboard, jadi bypass widget (upload langsung ke endpoint Cloudinary, skip UI) tidak lagi lolos tanpa validasi. Signed upload (server men-generate signature sebelum upload diizinkan) dicatat sebagai potential future hardening, belum diterapkan — cukup untuk skala portfolio saat ini
 - Footer disclaimer text memiliki contrast ratio di bawah WCAG AA (2.53:1, minimal 4.5:1) — trade-off desain yang disengaja agar teks disclaimer tidak lebih menonjol dari copyright line; sudah terdeteksi di test suite (`accessibility.spec.ts`) sebagai known gap, belum diperbaiki
+- Data artikel seluruhnya fiktif/buatan generator lokal (`prisma/seed.ts` + `prisma/seed-dummy-extra.ts`)
 
 ---
 
@@ -280,6 +281,7 @@ Buka [http://localhost:3000](http://localhost:3000)
 | `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh (artikel, kategori, tag) ke database |
 | `db:seed:test` | `npx tsx prisma/seed-test-accounts.ts` | Buat 4 akun test (USER/JOURNALIST/EDITOR/ADMIN) — butuh `ALLOW_TEST_SEED=true` di `.env` |
 | `db:seed:admin` | `npx tsx prisma/seed-admin.ts` | Buat/update akun admin dari env vars — aman untuk production |
+| `db:seed:dummy` | `npx tsx prisma/seed-dummy-extra.ts` | Generate 36 artikel dummy tambahan (template lokal, bukan API eksternal) — butuh `npm run db:seed` sudah dijalankan |
 | `test:e2e` | `playwright test` | Jalankan seluruh E2E test suite — butuh `npm run dev` di port 3000 sudah berjalan |
 | `test:e2e:ui` | `playwright test --ui` | Jalankan E2E test suite dengan Playwright UI mode (debugging) |
 | `test:a11y` | `playwright test accessibility.spec.ts` | Test accessibility (axe-core) secara terisolasi |

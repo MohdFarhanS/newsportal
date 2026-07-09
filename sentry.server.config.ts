@@ -6,4 +6,8 @@ Sentry.init({
   tracesSampleRate: 1,
 
   debug: false,
+
+  // Client menutup koneksi sebelum response selesai (tab ditutup, navigasi,
+  // HMR reload) - bukan error aplikasi, bukan dev-only (bisa juga terjadi di production).
+  ignoreErrors: ["aborted"],
 })
