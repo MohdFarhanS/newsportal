@@ -126,6 +126,8 @@ jobs:
           repo="${{ github.repository }}"
 
           if [ "${ACTIVE}" = "true" ] && [ "${PREV_ACTIVE}" != "true" ]; then
+            gh label create "neon-compute-guard" --repo "${repo}" \
+              --color "D93F0B" --description "Neon compute usage guard alerts" --force
             gh issue create --repo "${repo}" \
               --title "Neon compute guard ACTIVE (${PERCENT}%)" \
               --label "neon-compute-guard" \
