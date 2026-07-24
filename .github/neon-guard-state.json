@@ -1,8 +1,8 @@
 {
-  "guardActive": false,
-  "cuHours": null,
-  "percent": null,
-  "periodStart": "",
-  "periodEnd": "",
-  "checkedAt": "never — awaiting first neon-usage-guard.yml run"
+  "guardActive": true,
+  "cuHours": 99.83,
+  "percent": 99.8,
+  "periodStart": "2026-07-01T00:00:00Z",
+  "periodEnd": "2026-08-01T00:00:00Z",
+  "checkedAt": "2026-07-24T15:26:56Z"
 }
