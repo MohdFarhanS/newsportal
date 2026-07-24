@@ -1,0 +1,141 @@
+name: Neon Compute Guard
+
+# Polls Neon's plain GET /projects/{id} endpoint (works on Free tier — the
+# richer /consumption_history endpoint is Scale+ only, 403s on Free) for
+# compute_time_seconds in the current billing period, and flips a committed
+# state file that e2e.yml reads to refuse running once usage crosses a
+# threshold. See docs/NEON_GUARD_SETUP.md for one-time manual setup.
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: neon-usage-guard
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Neon project usage
+        id: usage
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NEON_API_KEY:-}" ] || [ -z "${NEON_PROJECT_ID:-}" ]; then
+            echo "::error::NEON_API_KEY secret or NEON_PROJECT_ID variable missing — see docs/NEON_GUARD_SETUP.md"
+            exit 1
+          fi
+
+          response=$(curl -sf -H "Authorization: Bearer ${NEON_API_KEY}" \
+            "https://console.neon.tech/api/v2/projects/${NEON_PROJECT_ID}")
+
+          compute_seconds=$(echo "${response}" | jq -r '.project.compute_time_seconds // 0')
+          period_start=$(echo "${response}" | jq -r '.project.consumption_period_start // ""')
+          period_end=$(echo "${response}" | jq -r '.project.consumption_period_end // ""')
+
+          echo "compute_seconds=${compute_seconds}" >> "$GITHUB_OUTPUT"
+          echo "period_start=${period_start}" >> "$GITHUB_OUTPUT"
+          echo "period_end=${period_end}" >> "$GITHUB_OUTPUT"
+
+      - name: Decide guard state
+        id: decide
+        env:
+          COMPUTE_SECONDS: ${{ steps.usage.outputs.compute_seconds }}
+          CU_LIMIT: ${{ vars.NEON_CU_LIMIT }}
+          ON_PERCENT: ${{ vars.NEON_GUARD_ON_PERCENT }}
+          OFF_PERCENT: ${{ vars.NEON_GUARD_OFF_PERCENT }}
+        run: |
+          set -euo pipefail
+          cu_limit="${CU_LIMIT:-100}"
+          on_threshold="${ON_PERCENT:-90}"
+          off_threshold="${OFF_PERCENT:-70}"
+
+          cu_hours=$(echo "scale=2; ${COMPUTE_SECONDS} / 3600" | bc)
+          percent=$(echo "scale=1; ${cu_hours} * 100 / ${cu_limit}" | bc)
+
+          prev_active="false"
+          if [ -f .github/neon-guard-state.json ]; then
+            prev_active=$(jq -r '.guardActive' .github/neon-guard-state.json)
+          fi
+
+          active="${prev_active}"
+          if (( $(echo "${percent} >= ${on_threshold}" | bc -l) )); then
+            active="true"
+          elif (( $(echo "${percent} < ${off_threshold}" | bc -l) )); then
+            active="false"
+          fi
+
+          echo "active=${active}" >> "$GITHUB_OUTPUT"
+          echo "prev_active=${prev_active}" >> "$GITHUB_OUTPUT"
+          echo "cu_hours=${cu_hours}" >> "$GITHUB_OUTPUT"
+          echo "percent=${percent}" >> "$GITHUB_OUTPUT"
+
+      - name: Write state file
+        env:
+          ACTIVE: ${{ steps.decide.outputs.active }}
+          CU_HOURS: ${{ steps.decide.outputs.cu_hours }}
+          PERCENT: ${{ steps.decide.outputs.percent }}
+          PERIOD_START: ${{ steps.usage.outputs.period_start }}
+          PERIOD_END: ${{ steps.usage.outputs.period_end }}
+        run: |
+          set -euo pipefail
+          checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          jq -n \
+            --argjson guardActive "${ACTIVE}" \
+            --argjson cuHours "${CU_HOURS}" \
+            --argjson percent "${PERCENT}" \
+            --arg periodStart "${PERIOD_START}" \
+            --arg periodEnd "${PERIOD_END}" \
+            --arg checkedAt "${checked_at}" \
+            '{guardActive: $guardActive, cuHours: $cuHours, percent: $percent, periodStart: $periodStart, periodEnd: $periodEnd, checkedAt: $checkedAt}' \
+            > .github/neon-guard-state.json
+
+      - name: Commit state if changed
+        run: |
+          set -euo pipefail
+          git config user.name "neon-usage-guard[bot]"
+          git config user.email "actions@github.com"
+          git add .github/neon-guard-state.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update neon compute guard state (${{ steps.decide.outputs.percent }}%)"
+            git push
+          fi
+
+      - name: Open/close alert issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIVE: ${{ steps.decide.outputs.active }}
+          PREV_ACTIVE: ${{ steps.decide.outputs.prev_active }}
+          CU_HOURS: ${{ steps.decide.outputs.cu_hours }}
+          PERCENT: ${{ steps.decide.outputs.percent }}
+          PERIOD_START: ${{ steps.usage.outputs.period_start }}
+          PERIOD_END: ${{ steps.usage.outputs.period_end }}
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+
+          if [ "${ACTIVE}" = "true" ] && [ "${PREV_ACTIVE}" != "true" ]; then
+            gh issue create --repo "${repo}" \
+              --title "Neon compute guard ACTIVE (${PERCENT}%)" \
+              --label "neon-compute-guard" \
+              --body "Compute usage at ${CU_HOURS} CU-hrs (${PERCENT}%) for period ${PERIOD_START} to ${PERIOD_END}. e2e.yml will refuse to run until usage drops below the off-threshold or the billing cycle resets."
+          fi
+
+          if [ "${ACTIVE}" = "false" ] && [ "${PREV_ACTIVE}" = "true" ]; then
+            issue_number=$(gh issue list --repo "${repo}" --label "neon-compute-guard" --state open --json number --jq '.[0].number // empty')
+            if [ -n "${issue_number}" ]; then
+              gh issue comment "${issue_number}" --repo "${repo}" --body "Usage back to ${PERCENT}% — guard cleared, e2e.yml unblocked."
+              gh issue close "${issue_number}" --repo "${repo}"
+            fi
+          fi

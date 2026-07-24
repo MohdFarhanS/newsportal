@@ -4,7 +4,25 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  check-guard:
+    runs-on: ubuntu-latest
+    outputs:
+      active: ${{ steps.read.outputs.active }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        run: |
+          set -euo pipefail
+          active=$(jq -r '.guardActive' .github/neon-guard-state.json)
+          echo "active=${active}" >> "$GITHUB_OUTPUT"
+          if [ "${active}" = "true" ]; then
+            percent=$(jq -r '.percent' .github/neon-guard-state.json)
+            echo "::error::Neon compute guard is ACTIVE (${percent}% of allowance used) — refusing to run E2E suite to avoid tripping the Neon compute cap. See open 'neon-compute-guard' issue or docs/NEON_GUARD_SETUP.md."
+            exit 1
+          fi
+
   e2e:
+    needs: check-guard
     runs-on: ubuntu-latest
     timeout-minutes: 28
 
