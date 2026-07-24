@@ -104,12 +104,20 @@ jobs:
       - name: Commit state if changed
         run: |
           set -euo pipefail
-          git config user.name "neon-usage-guard[bot]"
-          git config user.email "actions@github.com"
-          git add .github/neon-guard-state.json
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: update neon compute guard state (${{ steps.decide.outputs.percent }}%)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          prev_active_committed="false"
+          if git show HEAD:.github/neon-guard-state.json > /tmp/prev-state.json 2>/dev/null; then
+            prev_active_committed=$(jq -r '.guardActive' /tmp/prev-state.json)
+          fi
+
+          if [ "${{ steps.decide.outputs.active }}" != "${prev_active_committed}" ]; then
+            git add .github/neon-guard-state.json
+            git commit -m "chore: update neon compute guard state (${{ steps.decide.outputs.active }})"
             git push
+          else
+            echo "guardActive unchanged (${prev_active_committed}) — skipping commit"
           fi
 
       - name: Open/close alert issue
