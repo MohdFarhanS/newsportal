@@ -1,18 +1,38 @@
 import type { MetadataRoute } from "next"
 import { db } from "@/lib/db"
 
+/**
+ * Wrap a DB-backed query so infra-level failures (Neon compute quota
+ * exhausted, connection pool exhaustion, transient network errors, etc.)
+ * degrade to `fallback` instead of throwing. Prevents `npm run build` from
+ * failing entirely just because sitemap generation couldn't reach the DB —
+ * build succeeds with a smaller (static-pages-only) sitemap instead.
+ */
+async function safeQuery<T>(label: string, fallback: T, query: () => Promise<T>): Promise<T> {
+  try {
+    return await query()
+  } catch (err) {
+    console.error(`[sitemap:${label}] query failed, returning fallback:`, err)
+    return fallback
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
   const [articles, categories] = await Promise.all([
-    db.article.findMany({
-      where: { status: "PUBLISHED" },
-      select: { slug: true, updatedAt: true },
-      orderBy: { publishedAt: "desc" },
-    }),
-    db.category.findMany({
-      select: { slug: true, updatedAt: true },
-    }),
+    safeQuery("articles", [], () =>
+      db.article.findMany({
+        where: { status: "PUBLISHED" },
+        select: { slug: true, updatedAt: true },
+        orderBy: { publishedAt: "desc" },
+      }),
+    ),
+    safeQuery("categories", [], () =>
+      db.category.findMany({
+        select: { slug: true, updatedAt: true },
+      }),
+    ),
   ])
 
   const staticPages: MetadataRoute.Sitemap = [

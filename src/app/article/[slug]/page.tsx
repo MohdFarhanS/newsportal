@@ -60,11 +60,17 @@ export default async function ArticlePage({ params }: Props) {
   if (!article) notFound()
 
   const [related, session] = await Promise.all([
-    getRelatedArticles(article.categoryId, slug),
-    auth(),
+    getRelatedArticles(article.categoryId, slug), // sudah aman via safeQuery
+    auth().catch((err) => {
+      console.error("[ArticlePage] auth() failed, treating as logged-out:", err)
+      return null
+    }),
   ])
   const bookmarked = session?.user?.id
-    ? await isArticleBookmarked(session.user.id, article.id)
+    ? await isArticleBookmarked(session.user.id, article.id).catch((err) => {
+        console.error("[ArticlePage] isArticleBookmarked failed:", err)
+        return false
+      })
     : false
   const minutes = readingTime(article.content)
 

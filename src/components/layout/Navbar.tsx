@@ -6,7 +6,13 @@ import LogoutButton from "@/components/layout/LogoutButton"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default async function Navbar() {
-  const [categories, session] = await Promise.all([getNavCategories(), auth()])
+  const [categories, session] = await Promise.all([
+    getNavCategories(), // sudah aman — return [] kalau DB gagal
+    auth().catch((err) => {
+      console.error("[Navbar] auth() failed, treating as logged-out:", err)
+      return null
+    }),
+  ])
 
   return (
     <header className="border-b border-[#E4E4E7] bg-white sticky top-0 z-50">

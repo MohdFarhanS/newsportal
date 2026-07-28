@@ -7,13 +7,31 @@ const articleInclude = {
   category: true,
 } as const
 
+/**
+ * Wrap a DB-backed query so infra-level failures (Neon compute quota
+ * exhausted, connection pool exhaustion, transient network errors, etc.)
+ * degrade the section to `fallback` instead of throwing and crashing the
+ * whole Server Component tree. Logs so Sentry/Vercel logs still capture it.
+ */
+
+async function safeQuery<T>(label: string, fallback: T, query: () => Promise<T>): Promise<T> {
+  try {
+    return await query()
+  } catch (err) {
+    console.error(`[articles:${label}] query failed, returning fallback:`, err)
+    return fallback
+  }
+}
+
 export async function getFeaturedArticles() {
-  return db.article.findMany({
-    where: { isFeatured: true, status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" },
-    take: 3,
-    include: articleInclude,
-  })
+  return safeQuery("getFeaturedArticles", [], () =>
+    db.article.findMany({
+      where: { isFeatured: true, status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+      include: articleInclude,
+    }),
+  )
 }
 
 export async function getLatestArticles(page: number, perPage = 6, includeFeatured = false) {
@@ -21,17 +39,23 @@ export async function getLatestArticles(page: number, perPage = 6, includeFeatur
     status: "PUBLISHED" as const,
     ...(includeFeatured ? {} : { isFeatured: false }),
   }
-  const [articles, total] = await Promise.all([
-    db.article.findMany({
-      where,
-      orderBy: { publishedAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: articleInclude,
-    }),
-    db.article.count({ where }),
-  ])
-  return { articles, total, totalPages: Math.ceil(total / perPage) }
+  return safeQuery(
+    "getLatestArticles",
+    { articles: [], total: 0, totalPages: 0 },
+    async () => {
+      const [articles, total] = await Promise.all([
+        db.article.findMany({
+          where,
+          orderBy: { publishedAt: "desc" },
+          skip: (page - 1) * perPage,
+          take: perPage,
+          include: articleInclude,
+        }),
+        db.article.count({ where }),
+      ])
+      return { articles, total, totalPages: Math.ceil(total / perPage) }
+    },
+  )
 }
 
 export async function getTrendingArticles() {
@@ -88,16 +112,18 @@ export async function getRelatedArticles(
   excludeSlug: string,
   limit = 3,
 ) {
-  return db.article.findMany({
-    where: {
-      categoryId,
-      slug: { not: excludeSlug },
-      status: "PUBLISHED",
-    },
-    orderBy: { publishedAt: "desc" },
-    take: limit,
-    include: articleInclude,
-  })
+  return safeQuery("getRelatedArticles", [], () =>
+    db.article.findMany({
+      where: {
+        categoryId,
+        slug: { not: excludeSlug },
+        status: "PUBLISHED",
+      },
+      orderBy: { publishedAt: "desc" },
+      take: limit,
+      include: articleInclude,
+    }),
+  )
 }
 
 
@@ -110,33 +136,45 @@ export async function getArticlesByCategory(
     status: "PUBLISHED" as const,
     category: { slug: categorySlug },
   }
-  const [articles, total] = await Promise.all([
-    db.article.findMany({
-      where,
-      include: articleInclude,
-      orderBy: { publishedAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-    }),
-    db.article.count({ where }),
-  ])
-  return { articles, totalPages: Math.ceil(total / perPage) }
+  return safeQuery(
+    "getArticlesByCategory",
+    { articles: [], totalPages: 0 },
+    async () => {
+      const [articles, total] = await Promise.all([
+        db.article.findMany({
+          where,
+          include: articleInclude,
+          orderBy: { publishedAt: "desc" },
+          skip: (page - 1) * perPage,
+          take: perPage,
+        }),
+        db.article.count({ where }),
+      ])
+      return { articles, totalPages: Math.ceil(total / perPage) }
+    },
+  )
 }
 
 
 export async function getArticlesByAuthor(authorId: string, page: number, perPage = 12) {
   const where = { status: "PUBLISHED" as const, authorId }
-  const [articles, total] = await Promise.all([
-    db.article.findMany({
-      where,
-      include: articleInclude,
-      orderBy: { publishedAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-    }),
-    db.article.count({ where }),
-  ])
-  return { articles, total, totalPages: Math.ceil(total / perPage) }
+  return safeQuery(
+    "getArticlesByAuthor",
+    { articles: [], total: 0, totalPages: 0 },
+    async () => {
+      const [articles, total] = await Promise.all([
+        db.article.findMany({
+          where,
+          include: articleInclude,
+          orderBy: { publishedAt: "desc" },
+          skip: (page - 1) * perPage,
+          take: perPage,
+        }),
+        db.article.count({ where }),
+      ])
+      return { articles, total, totalPages: Math.ceil(total / perPage) }
+    },
+  )
 }
 export type ArticleWithRelations = Awaited<ReturnType<typeof getFeaturedArticles>>[number]
 export type TrendingArticle = Awaited<ReturnType<typeof getTrendingArticles>>[number]
