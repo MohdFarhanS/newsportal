@@ -85,14 +85,14 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://res.cloudinary.com" />
       </head>
-      <body className={`${newsreader.variable} ${roboto.variable} antialiased bg-[#FAFAFA]`}>
+      <body className={`${newsreader.variable} ${roboto.variable} antialiased bg-[#FAFAFA] min-h-screen flex flex-col`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd).replace(/</g, "\\u003c") }}
         />
         <QueryProvider>
           <Navbar />
-          {children}
+          <div className="flex-1">{children}</div>
           <Footer />
         </QueryProvider>
         <Toaster richColors position="top-right" />
