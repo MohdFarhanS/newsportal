@@ -2,10 +2,9 @@
 
 [![CI](https://github.com/MohdFarhanS/newsportal/actions/workflows/ci.yml/badge.svg)](https://github.com/MohdFarhanS/newsportal/actions/workflows/ci.yml)
 
-Portfolio project — portal berita modern berbahasa Indonesia yang dibangun dengan Next.js 15, menampilkan artikel terkurasi, sistem manajemen konten berbasis peran, dan pelacakan artikel trending secara real-time.
+Portfolio project — a modern Indonesian-language news portal built with Next.js 15, featuring curated articles, a role-based content management system, and real-time tracking of trending articles.
 
-Dibangun untuk eksplorasi editorial workflow yang realistis — 4 role dengan alur draft-review-publish lengkap dan proteksi race-condition — dibanding sekadar CRUD blog satu-role yang umum di project belajar.
-
+Built for realistic exploration of editorial workflows—featuring four roles with a complete draft-review-publish workflow and race-condition protection—rather than the typical single-role CRUD blog commonly found in learning projects.
 🔗 Live Demo: [newsportal.my.id](https://newsportal.my.id)
 
 ## Screenshots
@@ -36,7 +35,7 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
   </tr>
 </table>
 
-> **Catatan:** Semua artikel, jurnalis, dan konten lainnya bersifat fiktif dan dibuat untuk keperluan demonstrasi kemampuan fullstack development.
+> **Notes:** All articles, journalists, and other content are fictional and created for the purpose of demonstrating full-stack development skills.
 
 ---
 
@@ -49,174 +48,187 @@ https://github.com/user-attachments/assets/cd6c7869-e4f9-464c-a81b-405fb5d0ceaf
 - **Security-hardened** — rate limiting, sanitasi HTML dua layer, security headers, session re-validation
 
 ![Lighthouse audit — live production, desktop](docs/lighthouse/desktop-summary.png)
-*Lighthouse audit — live production, desktop*
+_Lighthouse audit — live production, desktop_
 
 ---
 
 ## Tech Stack
 
-| Layer | Teknologi |
-|-------|-----------|
-| Framework | Next.js 15.5 (App Router, Turbopack) |
-| Language | TypeScript 5 |
-| Database | PostgreSQL + Prisma 7 (PG adapter) |
-| Auth | NextAuth v5 (beta) — Credentials provider, JWT |
-| UI | Shadcn/ui, Radix UI, Tailwind CSS v4 |
-| Rich Text | TipTap 3 |
-| Images | Cloudinary via Next Cloudinary |
-| Email | Resend |
-| Rate Limiting | Upstash Redis |
-| Validasi | Zod v4 + React Hook Form |
-| Data Fetching | TanStack Query v5 |
-| Analytics | Vercel Analytics |
+| Layer         | Tech                                                      |
+| ------------- | --------------------------------------------------------- |
+| Framework     | Next.js 15.5 (App Router, Turbopack)                      |
+| Language      | TypeScript 5                                              |
+| Database      | PostgreSQL + Prisma 7 (PG adapter)                        |
+| Auth          | NextAuth v5 (beta) — Credentials provider, JWT            |
+| UI            | Shadcn/ui, Radix UI, Tailwind CSS v4                      |
+| Rich Text     | TipTap 3                                                  |
+| Images        | Cloudinary via Next Cloudinary                            |
+| Email         | Resend                                                    |
+| Rate Limiting | Upstash Redis                                             |
+| Validasi      | Zod v4 + React Hook Form                                  |
+| Data Fetching | TanStack Query v5                                         |
+| Analytics     | Vercel Analytics                                          |
 | Sanitasi HTML | sanitize-html (save-time + display-time, allowlist-based) |
-| Fonts | Newsreader (heading) + Roboto (body) — Google Fonts |
-| E2E Testing | Playwright — 256 test lintas 11 area kritis |
-| A11y Testing | `@axe-core/playwright` — WCAG 2.1 AA runtime scan |
+| Fonts         | Newsreader (heading) + Roboto (body) — Google Fonts       |
+| E2E Testing   | Playwright — 256 tests across 11 critical areas           |
+| A11y Testing  | `@axe-core/playwright` — WCAG 2.1 AA runtime scan         |
 
 ---
 
 ## Fitur
 
-### Publik
-- Homepage dengan seksi **Featured**, **Latest** (paginasi), dan **Trending** (7 hari terakhir)
-- Detail artikel dengan view tracking (dedup otomatis per IP)
-- Listing artikel di `/latest` dan `/category/[slug]` dengan paginasi
-- Halaman penulis `/author/[username]`
-- Pencarian + filter kategori / tag / rentang waktu (`/search`)
-- Navigasi kategori dinamis (6 kategori teratas)
-- Halaman Tentang dan Kontak
+### Public
 
-### Autentikasi & Otorisasi
-- Login / Register dengan email & password
-- Forgot & reset password via link email berbatas waktu, sekali pakai
+- Homepage with **Featured**, **Latest** (paginated), and **Trending** (last 7 days) sections
+- Article details with view tracking (automatic deduplication by IP)
+- List articles at `/latest` and `/category/[slug]` with pagination
+- Author Page `/author/[username]`
+- Search + filter by category / tag / time range (`/search`)
+- Dynamic category navigation (top 6 categories)
+- About and Contact Pages
+
+### Authentication & Authorization
+
+- Log in / Sign up with your email and password
+- Forgot & reset password via a time-limited, one-time-use email link
 - Role-based access control: `USER`, `JOURNALIST`, `EDITOR`, `ADMIN`
-- Sesi pengguna otomatis tercabut saat akun disuspend atau password diganti
-- Rate limiting di endpoint sensitif (login, register, forgot/reset password, search)
+- Automatic user sessions are terminated when an account is suspended or a password is changed
+- Rate limiting on sensitive endpoints (login, register, forgot/reset password, search)
 
-### Dashboard Pengguna
-- Edit profil: nama, bio, link sosial media
-- Upload avatar (PNG / JPEG / WebP, maks 5 MB, auto-crop persegi)
-- Ganti password
-- Bookmark artikel — simpan/hapus dari halaman artikel, lihat semua di `/dashboard/bookmarks` dengan paginasi
-- Riwayat baca — tercatat otomatis saat login, urut terbaru di `/dashboard/history`, hapus per-item atau sekaligus
+### User Dashboard
 
-### Manajemen Konten *(CMS Dashboard)*
-- Status artikel: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
-- Artikel featured (maks 3, kurasi manual)
-- Kategori dan tag
-- Upload cover image untuk artikel
-- Editor rich text (link, gambar)
+- Edit profile: name, bio, social media links
+- Upload an avatar (PNG / JPEG / WebP, max 5 MB, automatically cropped to a square)
+- Change Password
+- Bookmark an article — save or remove it from the article page; view all bookmarks at `/dashboard/bookmarks` with pagination
+- Reading history — automatically recorded when you log in, sorted by most recent at `/dashboard/history`; delete items individually or all at once
 
-### Administrasi *(ADMIN only)*
-- **Kelola Taksonomi** (`/dashboard/taxonomy`) — CRUD kategori & tag dalam satu halaman; penghapusan diblokir jika masih dipakai artikel
-- **Kelola Pengguna** (`/dashboard/users`) — filter & ubah role, aktifkan/nonaktifkan akun; admin tidak dapat mengubah atau menonaktifkan akun sendiri
+### Content Management _(CMS Dashboard)_
+
+- Article Status: `DRAFT` → `REVIEW` → `PUBLISHED` / `REJECTED` / `SCHEDULED`
+- Featured articles (max. 3, manually curated)
+- Categories and tags
+- Upload a cover image for the article
+- Rich text editor (links, images)
+
+### Administration _(ADMIN only)_
+
+- **Manage Taxonomy** (`/dashboard/taxonomy`) — CRUD operations for categories and tags on a single page; deletion is blocked if the taxonomy is still used by any posts
+- **Manage Users** (`/dashboard/users`) — filter and change roles, enable/disable accounts; admins cannot change or disable their own accounts
 
 ### Editorial Workflow
-- **Submit for Review** — jurnalis ajukan artikel draft/rejected ke editor
-- **Review Queue** (`/dashboard/review`) — editor/admin lihat semua artikel REVIEW (urutan FIFO), filter per kategori
-- **Approve** — publish artikel langsung dari antrian
-- **Jadwalkan** — atur waktu publikasi otomatis di masa depan
-- **Reject** — tolak dengan catatan wajib, ditampilkan ke jurnalis
-- **Admin Override** (`/dashboard/manage-articles`) — ubah status artikel apapun tanpa batasan alur editorial
-- **Toggle Featured** — tandai artikel published sebagai featured (maks 3 tampil di homepage)
 
-### Analytics Dashboard *(EDITOR & ADMIN)*
-- Ringkasan statistik: total artikel, artikel published, total views
-- Top 10 artikel per periode (7 hari / 30 hari / semua waktu)
-- Grafik pertumbuhan pengguna baru per minggu *(ADMIN only)*
+- **Submit for Review** — Journalists submit draft or rejected articles to the editor
+- **Review Queue** (`/dashboard/review`) — editor/admin: view all REVIEW articles (in FIFO order), filter by category
+- **Approve** — Publish articles directly from the queue
+- **Jadwalkan** — Schedule automatic future posts
+- **Reject** — Reject with mandatory notes; to be shown to journalists
+- **Admin Override** (`/dashboard/manage-articles`) — Change the status of any article without restrictions from the editorial workflow
+- **Toggle Featured** — Mark published articles as “featured” (up to 3 will appear on the homepage)
+
+### Analytics Dashboard _(EDITOR & ADMIN)_
+
+- Statistical summary: total articles, published articles, total views
+- Top 10 articles by period (7 days / 30 days / all time)
+- Chart of Weekly New User Growth _(ADMIN only)_
 
 ### SEO
-- `robots.txt` dan `sitemap.xml` dinamis
-- Open Graph + Twitter Card di semua halaman
-- Structured data (JSON-LD) untuk artikel & organisasi
+
+- `robots.txt` and `sitemap.xml` dynamic
+- Open Graph + Twitter Card on all pages
+- Structured data (JSON-LD) for articles & organizations
 - Custom 404 page
-- `llms.txt` untuk AI-crawler readiness
+- `llms.txt` for AI crawler readiness
 
 ---
 
 ## Technical Highlights
 
 ### Security
-- Password reset token: sekali pakai, expire 1 jam, disimpan sebagai SHA-256 hash
-- Sesi JWT di-re-validasi ke DB tiap request (`isActive`, `passwordChangedAt`) — auto-revoke saat suspend/ganti password
-- Rate limiting (Upstash Redis) di endpoint sensitif — fail-open kalau env kosong atau Upstash gagal konek saat runtime; di production kondisi ini memicu satu Sentry alert per cold start (`safeRateLimit()`, bukan silent lagi)
-- Security headers lengkap: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-- Resolusi IP client tersentralisasi (`getClientIp`) — prioritas header edge-injected Vercel di production, mencegah bypass rate-limiter via spoofing `x-forwarded-for`
-- Sanitasi HTML dua layer (save-time + display-time) via `sanitize-html`, allowlist-based
-- Error monitoring (Sentry) terintegrasi di production (client/server/edge) — Session Replay dengan masking eksplisit untuk semua text/input, mencegah kebocoran data di halaman auth (login/register/forgot-password)
+
+- Password reset token: single-use, expires in 1 hour, stored as a SHA-256 hash
+- The JWT is revalidated against the database with every request (`isActive`, `passwordChangedAt`) — automatically revoked upon suspension or password change
+- Rate limiting (Upstash Redis) on sensitive endpoints — fail-open if the environment is empty or Upstash fails to connect at runtime; in production, this triggers one Sentry alert per cold start (`safeRateLimit()`, no longer silent)
+- Header keamanan lengkap: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- Centralized client IP resolution (`getClientIp`) — a Vercel edge-injected header priority in production, preventing rate-limiter bypass via spoofing `x-forwarded-for`
+- Two-layer HTML sanitization (save-time + display-time) via `sanitize-html`, allowlist-based
+- Error monitoring (Sentry) is integrated into production (client/server/edge) — Session Replay with explicit masking for all text and input, preventing data leaks on authentication pages (login/register/forgot-password)
 
 ### Reliability & Data Integrity
-- TOCTOU guard (atomic `updateMany`) pada aksi review artikel bersamaan — race condition menghasilkan 409 Conflict, bukan data korup
-- Riwayat baca pakai DB `upsert` — mencegah duplikasi entri
-- Guard hapus taksonomi: kategori diproteksi FK RESTRICT + guard aplikasi; tag diproteksi guard aplikasi murni (relasi cascade di level DB)
-- View tracking dedup per IP dalam window 24 jam — mencegah view-count inflation
+
+- TOCTOU guard (atomic `updateMany`) in concurrent article review actions — a race condition results in a 409 Conflict, not corrupted data
+- Reading history using a `upsert` database — preventing duplicate entries
+- Guard removes taxonomy: FK RESTRICT+ protected categories; tags are protected by the application guard only (cascade relationship at the DB level)
+- View tracking deduplication per IP within a 24-hour window — prevents view-count inflation
 
 ### Performance
-- Suspense streaming di homepage — Featured/Latest/Trending termuat independen
-- `React.cache()` dedup DB call antara `generateMetadata` dan page component
-- Index database lengkap untuk semua FK yang sering di-query, plus `pg_trgm`/GIN trigram index untuk full-text search
-- Optimasi gambar: `next/image` + Cloudinary auto-format/quality, AVIF/WebP, cache 24 jam
-- Cache analytics (`unstable_cache` + `revalidateTag`) — 60 detik untuk statistik/top-artikel, 1 jam untuk grafik pengguna, invalidasi otomatis saat ada aksi terkait
-- Grafik pengguna baru: pure-CSS chart tanpa library eksternal, bucket mingguan timezone-aware (WIB)
+
+- Streaming highlights on the homepage — Featured/Latest/Trending are displayed separately
+- `React.cache()` deduplicates database calls between `generateMetadata` and the page component
+- A full database index for all frequently queried foreign keys, plus the `pg_trgm`/GIN trigram index for full-text search
+- Image optimization: `next/image` + Cloudinary auto-format/quality, AVIF/WebP, 24-hour cache
+- Cache analytics (`unstable_cache` + `revalidateTag`) — 60 seconds for statistics/top articles, 1 hour for user graphs, automatic invalidation upon related actions
+- New user chart: a pure-CSS chart without external libraries, with timezone-aware weekly buckets (WIB)
 - On-demand ISR — approve/override/toggle-featured/cron-publish otomatis me-revalidate halaman publik terkait
 
 ### Infrastructure
-- Turbopack untuk dev & production build
-- Connection pooling via Prisma PostgreSQL adapter (Neon pooler)
-- Vercel Cron untuk auto-publish artikel terjadwal
+
+- Turbopack for development and production builds
+- Connection pooling via the Prisma PostgreSQL adapter (Neon pooler)
+- Vercel Cron for automatically publishing scheduled articles
 
 ### SEO & Discoverability
-- JSON-LD lengkap: `NewsArticle` (+ `publisher.logo`, `mainEntityOfPage`, `isAccessibleForFree`, `author.url`), `Organization` (+ `logo`), `WebSite` + `SearchAction`, `BreadcrumbList` — eligible untuk Rich Results/Top Stories
-- `llms.txt` sesuai spec [llmstxt.org](https://llmstxt.org) untuk AI-crawler readiness
+
+- Complete JSON-LD: `NewsArticle` (+ `publisher.logo`, `mainEntityOfPage`, `isAccessibleForFree`, `author.url`), `Organization` (+ `logo`), `WebSite` + `SearchAction`, `BreadcrumbList` — eligible for Rich Results/Top Stories
+- `llms.txt` conforms to the spec [llmstxt.org](https://llmstxt.org) for AI crawler readiness
 
 ---
 
 ## Known Limitations
 
-- Rate limiting (Upstash) tetap fail-open kalau env var kosong ATAU Upstash gagal konek saat runtime (request tetap diproses tanpa limit, di semua environment) — aman untuk development yang tidak setup Upstash. Di production, kondisi ini tidak lagi silent: `safeRateLimit()` (`src/lib/rate-limit.ts`) mengirim satu Sentry alert per cold start (`process.env.VERCEL_ENV === "production"`, throttle via module-level flag) supaya ada yang tahu proteksi sedang tidak aktif — tapi tetap tidak memblokir request (murni observability, bukan fail-closed)
-- Upload avatar/cover image pakai unsigned Cloudinary preset — sudah ada validasi server-side (Cloudinary Admin API di-query ulang sebelum URL disimpan ke DB, `src/lib/cloudinary-verify.ts`) plus preset-level constraint di Cloudinary dashboard, jadi bypass widget (upload langsung ke endpoint Cloudinary, skip UI) tidak lagi lolos tanpa validasi. Signed upload (server men-generate signature sebelum upload diizinkan) dicatat sebagai potential future hardening, belum diterapkan — cukup untuk skala portfolio saat ini
-- Footer disclaimer text memiliki contrast ratio di bawah WCAG AA (2.53:1, minimal 4.5:1) — trade-off desain yang disengaja agar teks disclaimer tidak lebih menonjol dari copyright line; sudah terdeteksi di test suite (`accessibility.spec.ts`) sebagai known gap, belum diperbaiki
-- Data artikel seluruhnya fiktif/buatan generator lokal (`prisma/seed.ts` + `prisma/seed-dummy-extra.ts`)
+- Rate limiting (Upstash) remains fail-open if the environment variable is empty OR if Upstash fails to connect at runtime (requests are still processed without limits, in all environments) — safe for development environments that don’t have Upstash set up. In production, this condition is no longer silent: `safeRateLimit()` (`src/lib/rate-limit.ts`) sends one Sentry alert per cold start (`process.env.VERCEL_ENV === “production”`, throttled via a module-level flag) so that someone knows the protection is currently inactive — but it still does not block requests (purely for observability, not fail-closed)
+- Uploading an avatar/cover image using an unsigned Cloudinary preset—there is already server-side validation (the Cloudinary Admin API is queried again before the URL is saved to the DB, `src/lib/cloudinary-verify.ts`) plus preset-level constraints in the Cloudinary dashboard, so bypassing the widget (uploading directly to the Cloudinary endpoint, skipping the UI) no longer gets through without validation. Signed uploads (where the server generates a signature before the upload is allowed) are noted as a potential future security enhancement but have not yet been implemented—the current setup is sufficient for the portfolio’s current scale.
+- The footer disclaimer text has a contrast ratio below the WCAG AA standard (2.53:1, minimum 4.5:1) — an intentional design trade-off to ensure the disclaimer text does not stand out more than the copyright line; this has been detected in the test suite (`accessibility.spec.ts`) as a known gap and has not yet been fixed
+- All article data is fictional/generated by a local generator (`prisma/seed.ts` + `prisma/seed-dummy-extra.ts`)
 
 ---
 
-## Cara Memulai
+## How to Get Started
 
-### Prasyarat
+### Prerequisites
 
 - Node.js 18+
-- Akun [Neon](https://neon.tech) — dua branch: `production` (prod) dan `dev` (local). Jangan pakai satu branch untuk keduanya.
-- Akun Cloudinary, Resend
-- Akun Upstash Redis *(opsional — rate limiting di-skip jika env tidak ada)*
+- The [Neon](https://neon.tech) account — two branches: `production` (prod) and `dev` (local). Do not use a single branch for both.
+- Cloudinary Account, Resend
+- Upstash Redis account _(optional — rate limiting is skipped if the environment variable is missing)_
 
 ### 1. Clone & Install
 
 ```bash
-git clone <repo-url>
+git clone <https://github.com/MohdFarhanS/newsportal.git>
 cd newsportal
 npm install
 ```
 
 ### 2. Environment Variables
 
-Buat file `.env` di root project:
+Create a `.env` file in the project root:
 
 ```env
-# Database — Neon branch "dev" untuk local, branch "production" untuk Vercel
-# DATABASE_URL  = pooler URL  (runtime Next.js)
-# DIRECT_URL    = direct URL  (prisma migrate deploy)
+# Database — “dev” branch for local use, “production” branch for Vercel
+# DATABASE_URL  = pooler URL  (Next.js runtime)
+# DIRECT_URL    = URL langsung  (prisma migrate deploy)
 DATABASE_URL="postgresql://neondb_owner:<password>@<dev-branch-pooler-host>/neondb?sslmode=require&channel_binding=require"
 DIRECT_URL="postgresql://neondb_owner:<password>@<dev-branch-direct-host>/neondb?sslmode=require&channel_binding=require"
 
 # NextAuth
 AUTH_SECRET="your-secret-key-min-32-chars"
 
-# Upstash Redis (opsional — rate limiting)
+# Upstash Redis (optional — rate limiting)
 UPSTASH_REDIS_REST_URL="https://your-url.upstash.io"
 UPSTASH_REDIS_REST_TOKEN="your-token"
 
-# Cloudinary (upload avatar & cover image artikel)
+# Cloudinary (upload avatar and article cover image)
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
@@ -225,119 +237,122 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
 # Email (Resend)
 RESEND_API_KEY="re_your-api-key"
 
-# App URL — gunakan production URL saat deploy (https://yourdomain.com)
+# App URL — use the production URL when deploying (https://yourdomain.com)
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-# Email sender (harus domain yang diverifikasi di Resend)
+# Email sender (must be a domain verified on Resend)
 EMAIL_FROM="no-reply@mail.yourdomain.com"
 
-# Vercel Cron — generate dengan: node -e "require('crypto').randomBytes(32).toString('hex')"
-# Set nilai yang sama di Vercel Dashboard > Environment Variables
+# Vercel Cron — generate using: node -e “require(‘crypto’).randomBytes(32).toString(‘hex’)”
+# Set the same value in the Vercel Dashboard > Environment Variables
 CRON_SECRET="your-random-hex-secret"
 ```
 
 ### 3. Setup Database
 
 ```bash
-# Jalankan migrasi
+# Run the migration
 npm run migrate
 
-# (Opsional) Seed data contoh
+# (Optional) Sample seed data
 npm run db:seed
 ```
 
-Data seed mencakup:
-- 1 akun journalist: `journalist@newsportal.com` / `password123`
-- 6 kategori: Teknologi, Bisnis, Olahraga, Hiburan, Kesehatan, Politik
-- 8 tag: Breaking News, Eksklusif, Analisis, Opini, Investigasi, Infografis, Video, Podcast
-- 11 artikel contoh (3 featured, 8 regular) — masing-masing dengan `coverImageUrl` dari [picsum.photos](https://picsum.photos) (ID dikurasi per artikel)
+Seed data includes:
 
-Untuk testing semua role di development, jalankan juga:
+- 1 journalist account: `journalist@newsportal.com` / `password123`
+- 6 categories: Technology, Business, Sports, Entertainment, Health, Politics
+- 8 tags: Breaking News, Exclusive, Analysis, Opinion, Investigation, Infographics, Video, Podcast
+- 11 sample articles (3 featured, 8 regular) — each with a `coverImageUrl` from [picsum.photos](https://picsum.photos) (ID curated per article)
+
+To test all roles in the development environment, also run:
+
 ```bash
 npx tsx prisma/seed-test-accounts.ts
 ```
-Membuat akun: `user@test.com`, `journalist@test.com`, `editor@test.com`, `admin@test.com` — semua dengan password `password123`.
 
-### 4. Jalankan Development Server
+Create accounts: `user@test.com`, `journalist@test.com`, `editor@test.com`, `admin@test.com` — all with the password `password123`.
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
 ## Scripts
 
-| Script | Perintah | Keterangan |
-|--------|----------|------------|
-| `dev` | `next dev --turbopack` | Jalankan development server dengan Turbopack |
-| `build` | `next build --turbopack` | Build project untuk production |
-| `start` | `next start` | Jalankan production server |
-| `lint` | `eslint` | Jalankan linting kode |
-| `typecheck` | `tsc --noEmit` | Jalankan type-check TypeScript tanpa emit output |
-| `migrate` | `prisma migrate deploy` | Apply semua pending migration ke database |
-| `db:seed` | `npx tsx prisma/seed.ts` | Seed data contoh (artikel, kategori, tag) ke database |
-| `db:seed:test` | `npx tsx prisma/seed-test-accounts.ts` | Buat 4 akun test (USER/JOURNALIST/EDITOR/ADMIN) — butuh `ALLOW_TEST_SEED=true` di `.env` |
-| `db:seed:admin` | `npx tsx prisma/seed-admin.ts` | Buat/update akun admin dari env vars — aman untuk production |
-| `db:seed:dummy` | `npx tsx prisma/seed-dummy-extra.ts` | Generate 36 artikel dummy tambahan (template lokal, bukan API eksternal) — butuh `npm run db:seed` sudah dijalankan |
-| `test:e2e` | `playwright test` | Jalankan seluruh E2E test suite — butuh `npm run dev` di port 3000 sudah berjalan |
-| `test:e2e:ui` | `playwright test --ui` | Jalankan E2E test suite dengan Playwright UI mode (debugging) |
-| `test:a11y` | `playwright test accessibility.spec.ts` | Test accessibility (axe-core) secara terisolasi |
-| `test:responsive` | `playwright test responsiveness.spec.ts` | Test responsiveness (overflow/nav-toggle/column-hide/reflow) secara terisolasi |
-| `test:search` | `playwright test search.spec.ts` | Test search & filtering secara terisolasi |
-| `test:bookmark-history` | `playwright test bookmark-history.spec.ts` | Test bookmark & reading history secara terisolasi |
-| `test:analytics` | `playwright test analytics.spec.ts` | Test analytics dashboard secara terisolasi |
-| `test:security` | `playwright test security.spec.ts` | Test security (CSRF, rate-limit, XSS, headers) secara terisolasi |
+| Script                  | Command                                    | Description                                                                                                                                |
+| ----------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dev`                   | `next dev --turbopack`                     | Run the development server with Turbopack                                                                                                  |
+| `build`                 | `next build --turbopack`                   | Build the project for production                                                                                                           |
+| `start`                 | `next start`                               | Run the production server                                                                                                                  |
+| `lint`                  | `eslint`                                   | Run the code snippet                                                                                                                       |
+| `typecheck`             | `tsc --noEmit`                             | Jalankan type-check TypeScript tanpa emit output                                                                                           |
+| `migrate`               | `prisma migrate deploy`                    | Apply semua pending migration ke database                                                                                                  |
+| `db:seed`               | `npx tsx prisma/seed.ts`                   | Seed sample data (articles, categories, tags) into the database                                                                            |
+| `db:seed:test`          | `npx tsx prisma/seed-test-accounts.ts`     | Create 4 test accounts (USER/JOURNALIST/EDITOR/ADMIN) — you'll need `ALLOW_TEST_SEED=true` in `.env`                                       |
+| `db:seed:admin`         | `npx tsx prisma/seed-admin.ts`             | Create/update an admin account using environment variables — safe for production                                                           |
+| `db:seed:dummy`         | `npx tsx prisma/seed-dummy-extra.ts`       | Generate 36 additional dummy articles (using a local template, not an external API) — requires that `npm run db:seed` has already been run |
+| `test:e2e`              | `playwright test`                          | Run the entire E2E test suite — make sure `npm run dev` is already running on port 3000                                                    |
+| `test:e2e:ui`           | `playwright test --ui`                     | Run the E2E test suite in Playwright UI mode (debugging)                                                                                   |
+| `test:a11y`             | `playwright test accessibility.spec.ts`    | Test accessibility (axe-core) in isolation                                                                                                 |
+| `test:responsive`       | `playwright test responsiveness.spec.ts`   | Test responsiveness (overflow/nav-toggle/column-hide/reflow) in isolation                                                                  |
+| `test:search`           | `playwright test search.spec.ts`           | Test search and filtering in isolation                                                                                                     |
+| `test:bookmark-history` | `playwright test bookmark-history.spec.ts` | Test bookmarks and reading history in isolation                                                                                            |
+| `test:analytics`        | `playwright test analytics.spec.ts`        | Test the analytics dashboard in isolation                                                                                                  |
+| `test:security`         | `playwright test security.spec.ts`         | Test security (CSRF, rate limiting, XSS, headers) in isolation                                                                             |
 
 ---
 
-## Proteksi Route
+## Route Protection
 
-Diatur di `src/lib/auth.config.ts` via NextAuth `authorized` callback:
+Configured in `src/lib/auth.config.ts` via the NextAuth `authorized` callback:
 
-| Route | Akses |
-|-------|-------|
-| `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | Semua role yang sudah login |
-| `/dashboard/manage-articles` | EDITOR & ADMIN (page-level guard via `auth()`) |
-| `/dashboard/taxonomy`, `/dashboard/users` | ADMIN only (page-level guard via `auth()`) |
-| `/dashboard/*` lainnya | Login + role bukan USER (JOURNALIST/EDITOR/ADMIN) |
-| `/login`, `/register` | Redirect ke `/` jika sudah login (dicek di page-level via `auth()`) |
-| Semua route lain | Publik |
+| Route                                                                                                   | Access                                                                            |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `/dashboard`, `/dashboard/profile`, `/dashboard/security`, `/dashboard/bookmarks`, `/dashboard/history` | All logged-in roles                                                               |
+| `/dashboard/manage-articles`                                                                            | EDITOR & ADMIN (pengamanan tingkat halaman melalui `auth()`)                      |
+| `/dashboard/taxonomy`, `/dashboard/users`                                                               | Hanya untuk ADMIN (pengamanan tingkat halaman melalui `auth()`)                   |
+| `/dashboard/*` other                                                                                    | Login + role other than USER (JOURNALIST/EDITOR/ADMIN)                            |
+| `/login`, `/register`                                                                                   | Redirect to `/` if the user is logged in (checked at the page level via `auth()`) |
+| All other routes                                                                                        | Public                                                                            |
 
-Middleware diterapkan ke semua route kecuali: `/api/*`, `/_next/*`, `/favicon.ico`, file PNG.
+Middleware is applied to all routes except: `/api/*`, `/_next/*`, `/favicon.ico`, and PNG files.
 
-> Auth split-config pattern: `auth.config.ts` dipakai di middleware (edge runtime, tanpa DB query). `auth.ts` dipakai di server context dengan re-validasi JWT ke DB setiap request.
+> Auth split-config pattern: `auth.config.ts` is used in middleware (edge runtime, without DB queries). `auth.ts` is used in the server context with JWT revalidation against the DB on every request.
 >
-> **Penting:** Guard untuk auth pages (`/login`, `/register`) **tidak** ada di middleware karena middleware tidak bisa query DB — stale JWT cookie bisa menyebabkan false positive. Guard diimplementasi di page-level menggunakan `auth()` dari `auth.ts` yang DB-validated.
+> **Important:** Guards for auth pages (`/login`, `/register`) **are not** implemented as middleware because middleware cannot query the database—stale JWT cookies can cause false positives. Guards are implemented at the page level using `auth()` from `auth.ts`, which performs database validation..
 >
-> **USER route matching** menggunakan **exact match** (bukan `startsWith`) agar `/dashboard/profile-evil` tidak lolos whitelist karena ada `/dashboard/profile` di daftar yang diizinkan.
+> **USER route matching** uses **exact match** (not `startsWith`) so that `/dashboard/profile-evil` does not pass through the whitelist because `/dashboard/profile` is on the allowed list.
 
 ---
 
 ## E2E Testing
 
-Playwright E2E suite (`e2e/`) — **256 test, semuanya passed**, mencakup 11 area kritis: Authentication, RBAC, Editorial Workflow, Taxonomy Management, User Management, Accessibility (axe-core, WCAG 2.1 AA), Responsiveness, Search & Filtering, Bookmark & Reading History, Analytics Dashboard, dan Security (CSRF, rate-limit, XSS, security headers). Cakupan sengaja dibatasi ke area berisiko tinggi, bukan menyeluruh ke seluruh aplikasi.
+Playwright E2E suite (`e2e/`) — **256 tests, all passed**, covering 11 critical areas: Authentication, RBAC, Editorial Workflow, Taxonomy Management, User Management, Accessibility (axe-core, WCAG 2.1 AA), Responsiveness, Search & Filtering, Bookmarks & Reading History, Analytics Dashboard, and Security (CSRF, rate-limit, XSS, security headers). Coverage is intentionally limited to high-risk areas, rather than being comprehensive across the entire application.
 
-📊 [Lihat Test Report Lengkap](https://mohdfarhans.github.io/newsportal/)
+📊 [View the Full Test Report](https://mohdfarhans.github.io/newsportal/)
 
-**Prasyarat:** `npm run dev` harus sudah berjalan di port 3000 sebelum menjalankan test (`playwright.config.ts` reuse existing server, tidak membuka dev server baru).
+**Prerequisite:** `npm run dev` must already be running on port 3000 before running the test (`playwright.config.ts` reuses the existing server; it does not start a new dev server).
 
 ```bash
-npm run test:e2e      # jalankan seluruh suite
-npm run test:e2e:ui   # mode UI (debugging)
+npm run test:e2e      # Run the entire suite
+npm run test:e2e:ui   # UI mode (debugging)
 ```
 
-Selain lokal, suite ini juga bisa dijalankan on-demand di CI lewat GitHub Actions workflow **"E2E Tests"** (`.github/workflows/e2e.yml`, trigger manual via tab Actions). Sengaja dipisah dari `ci.yml` (lint/typecheck/build, jalan otomatis tiap push) jadi 2 workflow terpisah — supaya push biasa tetap cepat, sementara suite E2E yang lebih berat (~20 menit) dijalankan hanya saat dibutuhkan.
+In addition to running locally, this suite can also be run on-demand in CI via the GitHub Actions workflow **“E2E Tests”** (`.github/workflows/e2e.yml`, manually triggered via the Actions tab). It’s intentionally separated from `ci.yml` (lint/typecheck/build, which runs automatically on every push) into two separate workflows—so that regular pushes remain fast, while the heavier E2E suite (~20 minutes) runs only when needed.
 
-Detail lengkap per-suite (bug yang ditemukan, catatan rate-limit, teknik testing, known limitations) ada di [`docs/TESTING.md`](docs/TESTING.md).
+Complete details for each suite (bugs found, rate-limit notes, testing techniques, known limitations) can be found in [`docs/TESTING.md`](docs/TESTING.md).
 
 ---
 
 ## Documentation
 
-| Dokumen | Isi |
-|---------|-----|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Struktur proyek lengkap, skema database (relasi + enum), [diagram editorial workflow](docs/ARCHITECTURE.md#editorial-workflow), referensi fungsi query per modul |
-| [`docs/TESTING.md`](docs/TESTING.md) | Detail E2E test suite per area — cakupan, bug ditemukan, catatan operasional |
+| Documents                                      | Contents                                                                                                                                                                               |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Complete project structure, database schema (relationships + enumerations), [editorial workflow diagram](docs/ARCHITECTURE.md#editorial-workflow), query function references by module |
+| [`docs/TESTING.md`](docs/TESTING.md)           | Details of the E2E test suite by area — coverage, bugs found, operational notes                                                                                                        |
