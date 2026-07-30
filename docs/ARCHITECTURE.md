@@ -119,7 +119,7 @@ newsportal/
 │   │   │   │   ├── page.tsx                  # Manage all articles (EDITOR/ADMIN)
 │   │   │   │   └── OverrideActions.tsx       # Client: Override the status to any value using a dialog box
 │   │   │   ├── taxonomy/
-│   │   │   │   ├── page.tsx                  # Kelola Categories & Tags (ADMIN)
+│   │   │   │   ├── page.tsx                  # Manage Categories & Tags (ADMIN)
 │   │   │   │   ├── TaxonomyTabs.tsx          # Client: Category/Tag Tab Switcher + Row List
 │   │   │   │   ├── TaxonomyForm.tsx          # Client: Create/Edit Dialog (Auto-slug from Name)
 │   │   │   │   └── DeleteTaxonomyButton.tsx  # Client: Delete with confirmation + in-use guard
@@ -240,6 +240,36 @@ Article ────┬──── Bookmark (1:many)
 enum Role          { USER, JOURNALIST, EDITOR, ADMIN }
 enum ArticleStatus { DRAFT, REVIEW, PUBLISHED, REJECTED, SCHEDULED }
 ```
+
+---
+
+## Error Handling Contract for Query Functions
+
+Query functions across `src/lib/*.ts` follow one of two intentional
+behaviors on DB failure — this is a deliberate split, not an
+inconsistency:
+
+| Behavior | Used for | Rationale |
+|----------|----------|-----------|
+| **Fallback** (wrapped in `safeQuery`, returns empty/default value) | List/aggregate queries rendered inside a Suspense boundary or in the root layout (Navbar) — `getFeaturedArticles`, `getLatestArticles`, `getArticlesByCategory`, `getArticlesByAuthor`, `getRelatedArticles`, `getNavCategories`, `getAllCategories`, `getAllTags`, `sitemap.ts` queries | A DB outage should degrade a section to "no data" rather than crash the whole page or fail the production build (sitemap is prerendered at build time). Safe because there's no ambiguity to introduce — an empty list already has a defined empty state in the UI. |
+| **Throw** (unwrapped, propagates to `error.tsx`/`global-error.tsx`) | Single-entity lookups paired with `notFound()` — `getArticleBySlug`, `getCategoryBySlug`, `getAuthorById` | Silently falling back to `null` here would make a DB outage indistinguishable from a genuine 404, which is misleading. These intentionally surface the error boundary instead. |
+
+Session re-validation (`auth()`) and per-user state that depends on it
+(`isArticleBookmarked`) are always isolated with their own `.catch()`
+when awaited alongside a `safeQuery`-wrapped call in the same
+`Promise.all` — otherwise a single failed promise would fail the whole
+`Promise.all`, negating the fallback on the other call.
+
+The `safeQuery` helper (duplicated per-file rather than shared from a
+common module, matching this codebase's existing per-file pattern)
+logs the error via `console.error` before returning the fallback, so
+failures are still visible in Vercel/Sentry logs even though they no
+longer crash the request.
+
+Background: this pattern was introduced after a production incident
+where Neon's free-tier compute quota was exhausted, causing unhandled
+`DriverAdapterError`s to crash the homepage, navbar, and the
+`sitemap.xml` build step (Sentry issue NEWSPORTAL-P).
 
 ---
 
