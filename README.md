@@ -1,6 +1,7 @@
 # NewsPortal
 
 [![CI](https://github.com/MohdFarhanS/newsportal/actions/workflows/ci.yml/badge.svg)](https://github.com/MohdFarhanS/newsportal/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Portfolio project — a modern Indonesian-language news portal built with Next.js 15, featuring curated articles, a role-based content management system, and real-time tracking of trending articles.
 
@@ -358,3 +359,7 @@ Complete details for each suite (bugs found, rate-limit notes, testing technique
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Complete project structure, database schema (relationships + enumerations), [editorial workflow diagram](docs/ARCHITECTURE.md#editorial-workflow), query function references by module |
 | [`docs/TESTING.md`](docs/TESTING.md)           | Details of the E2E test suite by area — coverage, bugs found, operational notes                                                                                                        |
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
