@@ -1,8 +1,8 @@
 {
-  "guardActive": true,
-  "cuHours": 99.83,
-  "percent": 99.8,
-  "periodStart": "2026-07-01T00:00:00Z",
-  "periodEnd": "2026-08-01T00:00:00Z",
-  "checkedAt": "2026-07-24T15:26:56Z"
+  "guardActive": false,
+  "cuHours": 0,
+  "percent": 0,
+  "periodStart": "2026-08-01T00:00:00Z",
+  "periodEnd": "2026-09-01T00:00:00Z",
+  "checkedAt": "2026-08-01T02:32:23Z"
 }
