@@ -130,6 +130,7 @@ test.describe("Logout", () => {
 
 test.describe("FR-AUTH-05 — password reset invalidates other sessions", () => {
   test("two-context reset: old session dies, new password works, old password doesn't", async ({ browser }) => {
+    test.setTimeout(90_000) // was invalidated on next auth() call; now throttled up to 1 min (REVALIDATE_INTERVAL_MS in auth.ts)
     const runId = newRunId()
     const originalPassword = "OriginalPass123"
     const newPassword = "BrandNewPass456"
@@ -164,7 +165,9 @@ test.describe("FR-AUTH-05 — password reset invalidates other sessions", () => 
       await pageB.waitForURL(/\/login\?reset=success/)
       await contextB.close()
 
-      // Context A's session should now be lazily invalidated on the next server-side auth() call.
+      // Context A's session is now lazily invalidated within REVALIDATE_INTERVAL_MS (1 min, see
+      // auth.ts jwt callback) rather than on the very next request — wait past that window first.
+      await pageA.waitForTimeout(65_000)
       await pageA.goto("/dashboard")
       await pageA.waitForURL(/\/login/)
       await contextA.close()
@@ -251,7 +254,7 @@ test.describe("FR-AUTH-07 — suspending a user", () => {
   })
 
   test("suspend kills an already-active session", async ({ page, browser }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(100_000) // throttled invalidation now takes up to 1 min (REVALIDATE_INTERVAL_MS in auth.ts)
     const runId = newRunId()
     const password = "SuspendMeToo123"
     const { id: userId, email } = await createThrowawayUser({ scenario: "suspend-live", runId, password })
@@ -274,6 +277,9 @@ test.describe("FR-AUTH-07 — suspending a user", () => {
       await row.getByRole("button", { name: "Nonaktifkan" }).click()
       await expect(row.getByText("Nonaktif")).toBeVisible()
 
+      // Session invalidation is now throttled up to REVALIDATE_INTERVAL_MS (1 min, see auth.ts
+      // jwt callback) rather than instant — wait past that window before checking.
+      await sessionPage.waitForTimeout(65_000)
       await sessionPage.goto("/dashboard")
       await sessionPage.waitForURL(/\/login/)
       await sessionContext.close()

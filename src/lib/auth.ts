@@ -42,25 +42,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id as string
         token.role = (user as { role: string }).role
+        token.validatedAt = Date.now()
         return token
       }
-
-      if (token.id) {
+    
+      const REVALIDATE_INTERVAL_MS = 60 * 1000 // 1 menit
+      const lastValidated = (token.validatedAt as number | undefined) ?? 0
+      const needsRevalidation = Date.now() - lastValidated > REVALIDATE_INTERVAL_MS
+    
+      if (token.id && needsRevalidation) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
           select: { isActive: true, passwordChangedAt: true, role: true },
         })
-
+    
         if (!dbUser || !dbUser.isActive) return null
-
+    
         if (dbUser.passwordChangedAt && token.iat) {
           const issuedAt = new Date((token.iat as number) * 1000)
           if (dbUser.passwordChangedAt > issuedAt) return null
         }
-
+    
         token.role = dbUser.role
+        token.validatedAt = Date.now()
       }
-
+    
       return token
     },
     async session({ session, token }) {

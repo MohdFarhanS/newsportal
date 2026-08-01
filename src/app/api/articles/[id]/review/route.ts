@@ -121,6 +121,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     revalidatePath(`/article/${article.slug}`)
     revalidatePath("/sitemap.xml")
     revalidateTag("analytics")
+    revalidateTag("articles")
     return NextResponse.json({ message: "Artikel disetujui dan dipublikasikan." })
   }
 

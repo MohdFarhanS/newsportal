@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag  } from "next/cache"
 import slugify from "slugify"
 import { Prisma } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
@@ -81,6 +81,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     revalidatePath("/dashboard/taxonomy")
     revalidatePath("/")
     revalidatePath("/category/[slug]", "page")
+    revalidateTag("categories")
     return NextResponse.json({ category })
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
@@ -136,5 +137,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   revalidatePath("/dashboard/taxonomy")
   revalidatePath("/")
+  revalidateTag("categories")
   return NextResponse.json({ message: "Kategori dihapus." })
 }

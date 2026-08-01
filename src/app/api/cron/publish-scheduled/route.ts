@@ -43,6 +43,7 @@ export async function GET(req: Request) {
     revalidatePath(`/article/${article.slug}`)
   }
   revalidateTag("analytics")
+  revalidateTag("articles")
 
   return NextResponse.json({ published: result.count })
 }

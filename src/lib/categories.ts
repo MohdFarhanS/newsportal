@@ -1,5 +1,6 @@
 ﻿import { cache } from "react"
 import { db } from "@/lib/db"
+import { unstable_cache } from "next/cache"
 
 /**
  * Wrap a DB-backed query so infra-level failures (Neon compute quota
@@ -17,15 +18,19 @@ async function safeQuery<T>(label: string, fallback: T, query: () => Promise<T>)
   }
 }
 
-export async function getNavCategories() {
-  return safeQuery("getNavCategories", [], () =>
-    db.category.findMany({
-      orderBy: { createdAt: "asc" },
-      take: 6,
-      select: { id: true, name: true, slug: true },
-    }),
-  )
-}
+export const getNavCategories = unstable_cache(
+  async () => {
+    return safeQuery("getNavCategories", [], () =>
+      db.category.findMany({
+        orderBy: { createdAt: "asc" },
+        take: 6,
+        select: { id: true, name: true, slug: true },
+      }),
+    )
+  },
+  ["nav-categories"],
+  { revalidate: 300, tags: ["categories"] },
+)
 
 export const getCategoryBySlug = cache(async (slug: string) => {
   return db.category.findUnique({

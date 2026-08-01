@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag  } from "next/cache"
 import slugify from "slugify"
 import { Prisma } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
@@ -61,6 +61,7 @@ export async function POST(req: Request) {
     })
     revalidatePath("/dashboard/taxonomy")
     revalidatePath("/")
+    revalidateTag("categories")
     return NextResponse.json({ category }, { status: 201 })
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {

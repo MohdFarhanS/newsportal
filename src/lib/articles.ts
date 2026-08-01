@@ -1,6 +1,7 @@
 ﻿import { cache } from "react"
 import { db } from "@/lib/db"
 import { subDays } from "date-fns"
+import { unstable_cache } from "next/cache"
 
 const articleInclude = {
   author: { select: { id: true, name: true } },
@@ -23,78 +24,89 @@ async function safeQuery<T>(label: string, fallback: T, query: () => Promise<T>)
   }
 }
 
-export async function getFeaturedArticles() {
-  return safeQuery("getFeaturedArticles", [], () =>
-    db.article.findMany({
-      where: { isFeatured: true, status: "PUBLISHED" },
-      orderBy: { publishedAt: "desc" },
-      take: 3,
-      include: articleInclude,
-    }),
-  )
-}
+export const getFeaturedArticles = unstable_cache(
+  async () => {
+    return safeQuery("getFeaturedArticles", [], () =>
+      db.article.findMany({
+        where: { isFeatured: true, status: "PUBLISHED"},
+        orderBy: { publishedAt: "desc" },
+        take: 3,
+        include: articleInclude,
+      }),
+    )
+  },
+  ["featured-articles"],
+  { revalidate: 120, tags: ["articles"] },
+)
 
-export async function getLatestArticles(page: number, perPage = 6, includeFeatured = false) {
-  const where = {
-    status: "PUBLISHED" as const,
-    ...(includeFeatured ? {} : { isFeatured: false }),
-  }
-  return safeQuery(
-    "getLatestArticles",
-    { articles: [], total: 0, totalPages: 0 },
-    async () => {
-      const [articles, total] = await Promise.all([
-        db.article.findMany({
-          where,
-          orderBy: { publishedAt: "desc" },
-          skip: (page - 1) * perPage,
-          take: perPage,
-          include: articleInclude,
-        }),
-        db.article.count({ where }),
-      ])
-      return { articles, total, totalPages: Math.ceil(total / perPage) }
-    },
-  )
-}
+export const getLatestArticles = unstable_cache(
+  async (page: number, perPage = 6, includeFeatured = false) => {
+    const where = {
+      status: "PUBLISHED" as const, 
+      ...(includeFeatured ? {} : { isFeatured: false }),
+    }
+    return safeQuery(
+      "getLatestArticles",
+      { articles: [], total: 0, totalPages: 0 },
+      async () => {
+        const [articles, total] = await Promise.all([
+          db.article.findMany({
+            where,
+            orderBy: { publishedAt: "desc" },
+            skip: (page - 1) * perPage,
+            take: perPage,
+            include: articleInclude,
+          }),
+          db.article.count({ where }),
+        ])
+        return { articles, total, totalPages: Math.ceil(total / perPage) }
+      },
+    )
+  },
+  ["latest-articles"],
+  { revalidate: 120, tags: ["articles"] },
+)
 
-export async function getTrendingArticles() {
-  try {
-    const sevenDaysAgo = subDays(new Date(), 7)
+export const getTrendingArticles = unstable_cache(
+  async () => {
 
-    // ponytail: overfetch so unpublished articles don't shrink result below 5
-    const TRENDING_OVERFETCH = 15
-    const viewCounts = await db.articleView.groupBy({
-      by: ["articleId"],
-      _count: { id: true },
-      where: { viewedAt: { gte: sevenDaysAgo } },
-      orderBy: [{ _count: { id: "desc" } }, { articleId: "asc" }],
-      take: TRENDING_OVERFETCH,
-    })
+    try {
 
-    if (viewCounts.length === 0) return []
-
-    const articleIds = viewCounts.map((v) => v.articleId)
-
-    const articles = await db.article.findMany({
-      where: { id: { in: articleIds }, status: "PUBLISHED" },
-      select: { id: true, slug: true, title: true },
-    })
-
-    const articleMap = new Map(articles.map((a) => [a.id, a]))
-
-    return viewCounts
-      .map((v) => {
-        const article = articleMap.get(v.articleId)
-        if (!article) return null
-        return { ...article, viewCount: v._count.id }
+      const sevenDaysAgo = subDays(new Date(), 7)
+      const TRENDING_OVERFETCH = 15
+      const viewCounts = await db.articleView.groupBy({
+        by: ["articleId"],
+        _count: { id: true },
+        where: { viewedAt: { gte: sevenDaysAgo } },
+        orderBy: [{ _count: { id: "desc" } }, { articleId: "asc" }],
+        take: TRENDING_OVERFETCH,
       })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-      .slice(0, 5)
-  } catch {
-    return []
-  }
-}
+
+      if (viewCounts.length === 0) return []
+
+      const articleIds = viewCounts.map((v) => v.articleId)
+      const articles = await db.article.findMany({
+        where: { id: { in: articleIds }, status: "PUBLISHED" },
+        select: { id: true, slug: true, title: true },
+      })
+
+      const articleMap = new Map(articles.map((a) => [a.id, a]))
+
+      return viewCounts
+        .map((v) => {
+          const article = articleMap.get(v.articleId)
+          if (!article) return null
+          return { ...article, viewCount: v._count.id }
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .slice(0, 5)
+    } catch {
+      return []
+    }
+  },
+  ["trending-articles"],
+  { revalidate: 300, tags: ["trending"] },
+)
 
 export const getArticleBySlug = cache(async (slug: string) => {
   return db.article.findFirst({

@@ -137,6 +137,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   revalidatePath(`/article/${existing.slug}`)
   revalidatePath("/sitemap.xml")
   revalidateTag("analytics")
+  revalidateTag("articles")
 
   return NextResponse.json({ message: STATUS_MESSAGE[status] })
 }
