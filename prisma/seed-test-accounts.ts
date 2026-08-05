@@ -1,8 +1,12 @@
 ﻿import 'dotenv/config'
 import { PrismaClient } from '../src/generated/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaNeon } from '@prisma/adapter-neon'
+import { neonConfig } from '@neondatabase/serverless'
 import { Role } from '../src/generated/prisma/enums'
 import bcrypt from 'bcryptjs'
+import ws from 'ws'
+
+neonConfig.webSocketConstructor = ws
 
 function assertDevDatabase(rawUrl: string) {
   const expectedHostFragment = process.env.NEON_DEV_ENDPOINT_ID
@@ -26,7 +30,7 @@ function assertDevDatabase(rawUrl: string) {
   console.log(`  Host diverifikasi cocok whitelist dev: ${hostname}`)
 }
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
