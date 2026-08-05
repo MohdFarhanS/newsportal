@@ -1,7 +1,7 @@
 import { test as setup, expect } from "@playwright/test"
 
 const ACCOUNTS = {
-  admin: { email: "farhan@newsportaladmin.com", password: "password1121" },
+  admin: { email: "farhan@newsportaladmin.com", password: "jalanpenyunomor1" },
   editor: { email: "farhan@newsportaleditor.com", password: "password1121" },
   journalist: { email: "farhan@newsportaljournalist.com", password: "password1121" },
   user: { email: "farhan@newsportaluser.com", password: "password1121" },
